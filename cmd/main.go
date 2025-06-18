@@ -47,7 +47,7 @@ func handleSendEmail(w http.ResponseWriter, r *http.Request) {
 		err = email.SendWithBreevo(req.To, req.Subject, req.HTML)
 		if err != nil {
 			fmt.Printf("❌ Error sending email with Breevo: %v\n", err)
-			http.Error(w, "Failed to send email with Breevo", http.StatusInternalServerError)
+			http.Error(w, "Failed to send email with Breevo: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
