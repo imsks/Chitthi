@@ -8,12 +8,11 @@ import (
 )
 
 type Config struct {
-	Port           string
-	SendGridAPIKey string
-	RabbitMQURL    string
-	RedisURL       string
-	DatabaseURL    string
-	BreevoAPIKey   string
+	Port         string
+	RabbitMQURL  string
+	RedisURL     string
+	DatabaseURL  string
+	BreevoAPIKey string
 }
 
 func getEnv(key, fallback string) string {
@@ -31,11 +30,10 @@ func LoadConfig() Config {
 	}
 
 	return Config{
-		Port:           getEnv("PORT", "8080"),
-		SendGridAPIKey: getEnv("SENDGRID_API_KEY", ""),
-		RabbitMQURL:    getEnv("RABBITMQ_URL", ""),
-		RedisURL:       getEnv("REDIS_URL", ""),
-		DatabaseURL:    getEnv("DATABASE_URL", ""),
-		BreevoAPIKey:   getEnv("BREEVO_API_KEY", ""),
+		Port:         getEnv("PORT", "8080"),
+		RabbitMQURL:  getEnv("RABBITMQ_URL", ""),
+		RedisURL:     getEnv("REDIS_URL", ""),
+		DatabaseURL:  getEnv("DATABASE_URL", ""),
+		BreevoAPIKey: getEnv("BREEVO_API_KEY", ""),
 	}
 }

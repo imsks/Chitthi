@@ -15,7 +15,7 @@ type BreevoPayload struct {
 	HTML    string `json:"html"`
 }
 
-const BREEVO_API_URL = "https://api.breevo.ai/v1/emails"
+const BREEVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 func SendWithBreevo(to, subject, html string) error {
 	payload := BreevoPayload{
@@ -38,7 +38,9 @@ func SendWithBreevo(to, subject, html string) error {
 	req.Header.Set("Content-Type", "application/json")
 
 	cfg := config.LoadConfig()
+	fmt.Println("Breevo API Key:", cfg.BreevoAPIKey)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cfg.BreevoAPIKey))
+	req.Header.Set("X-Sib-Sandbox", "drop")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
