@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/imsks/chitthi/internal/config"
+	"github.com/imsks/chitthi/internal/email"
 	"github.com/imsks/chitthi/internal/model"
 )
 
@@ -41,7 +42,21 @@ func handleSendEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("📨 Received Email Request: %+v", req)
-	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte("Email accepted for processing."))
+	// Send email using Breevo
+	if req.Provider == "breevo" {
+		err = email.SendWithBreevo(req.To, req.Subject, req.HTML)
+		if err != nil {
+			fmt.Printf("❌ Error sending email with Breevo: %v\n", err)
+			http.Error(w, "Failed to send email with Breevo", http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("✅ Email sent to %s via %s", req.To, req.Provider)
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte("Email accepted and sent"))
+	} else {
+		http.Error(w, "Invalid provider", http.StatusBadRequest)
+		return
+	}
+
 }

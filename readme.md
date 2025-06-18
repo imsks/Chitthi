@@ -17,3 +17,7 @@ chitthi/
 ├── go.mod
 ├── go.sum
 └── README.md
+
+### Run the App
+
+go run cmd/main.go

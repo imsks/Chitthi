@@ -13,6 +13,7 @@ type Config struct {
 	RabbitMQURL    string
 	RedisURL       string
 	DatabaseURL    string
+	BreevoAPIKey   string
 }
 
 func getEnv(key, fallback string) string {
@@ -35,5 +36,6 @@ func LoadConfig() Config {
 		RabbitMQURL:    getEnv("RABBITMQ_URL", ""),
 		RedisURL:       getEnv("REDIS_URL", ""),
 		DatabaseURL:    getEnv("DATABASE_URL", ""),
+		BreevoAPIKey:   getEnv("BREEVO_API_KEY", ""),
 	}
 }
