@@ -1,35 +1,29 @@
 # ------------ Stage 1: Build the Go binary ------------
 FROM golang:1.24.3-alpine AS builder
 
-# Set working directory inside the container
 WORKDIR /app
 
-# Copy dependency files first for caching
 COPY go.mod go.sum ./
-
-# Download dependencies
 RUN go mod download
 
-# Copy the rest of the source code
 COPY . .
 
-# Build the Go binary
+# Compile your Go app inside cmd folder
 RUN go build -o server ./cmd
 
 # ------------ Stage 2: Lightweight runtime ------------
 FROM alpine:latest
 
-# Working directory for the final container
 WORKDIR /root/
 
-# Install certs (required for HTTPS requests like Breevo API)
+# Install certs (important for HTTPS calls like Breevo)
 RUN apk --no-cache add ca-certificates
 
-# Copy the compiled Go binary from builder stage
 COPY --from=builder /app/server .
 
-# Expose the port your app will run on (use `os.Getenv("PORT")` in code)
+# Don’t copy .env here! .env is used by compose and Go reads it via os.Getenv()
+# COPY .env .  <-- ❌ Not needed
+
 EXPOSE 8080
 
-# Run the Go app
 CMD ["./server"]
