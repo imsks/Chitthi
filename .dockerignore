@@ -1,0 +1,28 @@
+# Go binaries
+/server
+*.exe
+*.out
+*.test
+
+# Vendor directory (if not used)
+vendor/
+
+# Build cache
+*.log
+*.tmp
+
+# Git
+.git
+.gitignore
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Env files (we’ll map them with docker-compose)
+.env

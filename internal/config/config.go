@@ -3,8 +3,6 @@ package config
 import (
 	"log"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -23,17 +21,18 @@ func getEnv(key, fallback string) string {
 }
 
 func LoadConfig() Config {
-	err := godotenv.Load()
+	// err := godotenv.Load()
 
-	if err != nil {
-		log.Println("⚠️  .env file not found, using system environment variables")
-	}
+	// if err != nil {
+	// 	log.Println("⚠️  .env file not found, using system environment variables")
+	// }
+	log.Println("PORT:", os.Getenv("PORT")) // debug if it's loading
 
 	return Config{
 		Port:         getEnv("PORT", "8080"),
 		RabbitMQURL:  getEnv("RABBITMQ_URL", ""),
 		RedisURL:     getEnv("REDIS_URL", ""),
 		DatabaseURL:  getEnv("DATABASE_URL", ""),
-		BreevoAPIKey: getEnv("BREEVO_API_KEY", ""),
+		BreevoAPIKey: getEnv("DEFAULT_API_KEY", ""),
 	}
 }
