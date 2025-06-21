@@ -1,8 +1,10 @@
 package model
 
 type EmailRequest struct {
-	To       string `json:"to"`
-	Subject  string `json:"subject"`
-	HTML     string `json:"html"`
-	Provider string `json:"provider"`
+	FromEmail   string `json:"from_email"`
+	FromName    string `json:"from_name"`
+	ToEmail     string `json:"to_email"`
+	ToName      string `json:"to_name"`
+	Subject     string `json:"subject"`
+	HTMLContent string `json:"html_content"`
 }
