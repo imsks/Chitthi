@@ -30,6 +30,7 @@ func (b *BreevoAdapter) SendEmail(email model.EmailRequest) error {
 	}
 
 	payloadBytes, _ := json.Marshal(payload)
+
 	req, err := http.NewRequest("POST", "https://api.brevo.com/v3/smtp/email", bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return err

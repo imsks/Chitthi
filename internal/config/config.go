@@ -34,6 +34,6 @@ func LoadConfig() Config {
 		RabbitMQURL:  getEnv("RABBITMQ_URL", ""),
 		RedisURL:     getEnv("REDIS_URL", ""),
 		DatabaseURL:  getEnv("DATABASE_URL", ""),
-		BreevoAPIKey: getEnv("DEFAULT_API_KEY", ""),
+		BreevoAPIKey: getEnv("BREEVO_API_KEY", ""),
 	}
 }

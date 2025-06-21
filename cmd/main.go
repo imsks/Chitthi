@@ -45,6 +45,7 @@ func handleSendEmail(w http.ResponseWriter, r *http.Request) {
 
 	// Send email using Breevo
 	cfg := config.LoadConfig()
+	// TODO: Check here for Platforms and Usages
 	breevoAdapter := &adapters.BreevoAdapter{APIKey: cfg.BreevoAPIKey}
 
 	err = breevoAdapter.SendEmail(req)
