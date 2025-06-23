@@ -17,6 +17,7 @@ It supports third-party providers like Breevo, with features like API key auth, 
 
 ### Folder Structure
 
+```
 chitthi/
 ├── cmd/ # Entry point
 │ └── main.go
@@ -32,6 +33,7 @@ chitthi/
 ├── go.mod
 ├── go.sum
 └── README.md
+```
 
 ### Run the App
 
