@@ -100,6 +100,48 @@ docker compose up --build
 docker build -t chitthi-app .
 ```
 
+## Migration Guide
+
+### Create Email Logs Table
+
+```
+migrate create -ext sql -dir migrations -seq create_email_logs_table
+```
+
+### Run Migrations
+
+1. Locally
+
+```
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up
+```
+
+## Connect to DB
+
+1. Connect using Docker CLI
+
+```bash
+docker exec -it chitthi_db psql -U postgres -d chitthi
+```
+
+2. Inside the Postgres CLI:
+
+```sql
+\dt
+```
+
+3. Check the structure of the a table:
+
+```
+\d email_logs
+```
+
+4. Run SQL Query in Postgres CLI
+
+```sql
+SELECT * FROM email_logs LIMIT 5;
+```
+
 ### Roadmap
 
 🔌 API Endpoints (WIP)
