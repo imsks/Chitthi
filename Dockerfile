@@ -1,29 +1,20 @@
-# ------------ Stage 1: Build the Go binary ------------
-FROM golang:1.24.3-alpine AS builder
+FROM golang:1.24-alpine
 
+# Install Air
+RUN go install github.com/air-verse/air@latest
+
+# Set working directory
 WORKDIR /app
 
+# Copy go mod files and download deps
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Copy the rest of the code
 COPY . .
 
-# Compile your Go app inside cmd folder
-RUN go build -o server ./cmd
-
-# ------------ Stage 2: Lightweight runtime ------------
-FROM alpine:latest
-
-WORKDIR /root/
-
-# Install certs (important for HTTPS calls like Breevo)
-RUN apk --no-cache add ca-certificates
-
-COPY --from=builder /app/server .
-
-# Don’t copy .env here! .env is used by compose and Go reads it via os.Getenv()
-# COPY .env .  <-- ❌ Not needed
-
+# Expose the dev port
 EXPOSE 8080
 
-CMD ["./server"]
+# Run dev server with Air
+CMD ["air"]

@@ -8,3 +8,12 @@ type EmailRequest struct {
 	Subject     string `json:"subject"`
 	HTMLContent string `json:"html_content"`
 }
+
+type EmailLog struct {
+	ID             int    `json:"id"`
+	RecipientEmail string `json:"recipient_email"`
+	Subject        string `json:"subject"`
+	Provider       string `json:"provider"`
+	Status         string `json:"status"`
+	CreatedAt      string `json:"created_at"`
+}
