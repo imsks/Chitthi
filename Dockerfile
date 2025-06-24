@@ -1,6 +1,6 @@
 FROM golang:1.24-alpine
 
-# Install Air
+# Install Air (new path for Go 1.24+)
 RUN go install github.com/air-verse/air@latest
 
 # Set working directory
