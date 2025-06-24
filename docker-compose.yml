@@ -7,10 +7,11 @@ services:
             dockerfile: Dockerfile
         container_name: chitthi_app
         ports:
-            - "${PORT:-8080}:${PORT:-8080}" # fallback to 8080 if not defined
+            - "${PORT:-8080}:${PORT:-8080}"
         depends_on:
             - redis
             - db
+            - migrate
         env_file:
             - .env
         volumes:
@@ -40,6 +41,26 @@ services:
         volumes:
             - postgres_data:/var/lib/postgresql/data
         restart: unless-stopped
+
+    migrate:
+        image: migrate/migrate
+        container_name: chitthi_migrate
+        volumes:
+            - ./migrations:/migrations
+        entrypoint:
+            [
+                "migrate",
+                "-path",
+                "/migrations",
+                "-database",
+                "${DATABASE_URL}",
+                "up"
+            ]
+        depends_on:
+            - db
+        env_file:
+            - .env
+        restart: "on-failure"
 
 volumes:
     redis_data:
