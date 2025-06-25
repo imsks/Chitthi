@@ -2,25 +2,36 @@ package email
 
 import (
 	"context"
+	"log"
 
+	"github.com/imsks/chitthi/internal/config"
 	adapters "github.com/imsks/chitthi/internal/email"
 	"github.com/imsks/chitthi/internal/model"
 )
 
 type Service struct {
-	repo   *Repository
-	breevo *adapters.BreevoAdapter
+	repo     *Repository
+	balancer *adapters.LoadBalancer
 }
 
-func NewService(breevoAPIKey string) *Service {
+func NewService(cfg config.Config) *Service {
+	// Create providers from config
+	providers := adapters.CreateProviders(cfg)
+
+	// Create load balancer
+	balancer := adapters.NewLoadBalancer(providers)
+
+	// Log available providers
+	availableProviders := balancer.GetAvailableProviders()
+	log.Printf("🚀 Email service initialized with providers: %v", availableProviders)
+
 	return &Service{
-		repo:   NewRepository(),
-		breevo: &adapters.BreevoAdapter{APIKey: breevoAPIKey},
+		repo:     NewRepository(),
+		balancer: balancer,
 	}
 }
 
 func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) error {
-	// Convert to the model expected by the adapter
 	emailReq := model.EmailRequest{
 		FromEmail:   req.FromEmail,
 		FromName:    req.FromName,
@@ -30,24 +41,25 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) error {
 		HTMLContent: req.HTMLContent,
 	}
 
-	// Send email
-	err := s.breevo.SendEmail(emailReq)
+	providerName, err := s.balancer.SendEmail(emailReq)
+
 	if err != nil {
-		// Log failure
-		s.repo.InsertLog(ctx, &EmailLog{
+		logErr := s.repo.InsertLog(ctx, &EmailLog{
 			RecipientEmail: req.ToEmail,
 			Subject:        req.Subject,
-			Provider:       "breevo",
+			Provider:       "all_failed",
 			Status:         "failed",
 		})
+		if logErr != nil {
+			log.Printf("Failed to log email failure: %v", logErr)
+		}
 		return err
 	}
 
-	// Log success
 	return s.repo.InsertLog(ctx, &EmailLog{
 		RecipientEmail: req.ToEmail,
 		Subject:        req.Subject,
-		Provider:       "breevo",
+		Provider:       providerName,
 		Status:         "sent",
 	})
 }

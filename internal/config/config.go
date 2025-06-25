@@ -31,10 +31,11 @@ func LoadConfig() Config {
 	}
 
 	return Config{
-		Port:         getEnv("PORT", "8080"),
-		RabbitMQURL:  getEnv("RABBITMQ_URL", ""),
-		RedisURL:     getEnv("REDIS_URL", ""),
-		DatabaseURL:  getEnv("DATABASE_URL", ""),
-		BreevoAPIKey: getEnv("BREEVO_API_KEY", ""),
+		Port:             getEnv("PORT", "8080"),
+		RabbitMQURL:      getEnv("RABBITMQ_URL", ""),
+		RedisURL:         getEnv("REDIS_URL", ""),
+		DatabaseURL:      getEnv("DATABASE_URL", ""),
+		BreevoAPIKey:     getEnv("BREEVO_API_KEY", ""),
+		MailerSendAPIKey: getEnv("MAILERSEND_API_KEY", ""),
 	}
 }

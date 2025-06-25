@@ -19,7 +19,7 @@ func main() {
 	defer database.Close()
 
 	// Initialize services
-	emailService := email.NewService(cfg.BreevoAPIKey)
+	emailService := email.NewService(cfg)
 	emailHandler := email.NewHandler(emailService)
 
 	// Setup routes
