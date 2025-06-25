@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	Port         string
-	RabbitMQURL  string
-	RedisURL     string
-	DatabaseURL  string
-	BreevoAPIKey string
+	Port             string
+	RabbitMQURL      string
+	RedisURL         string
+	DatabaseURL      string
+	BreevoAPIKey     string
+	MailerSendAPIKey string
 }
 
 func getEnv(key, fallback string) string {
