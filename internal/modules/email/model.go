@@ -10,6 +10,10 @@ type EmailRequest struct {
 	ToName      string `json:"to_name"`
 	Subject     string `json:"subject"`
 	HTMLContent string `json:"html_content"`
+	// User-provided API keys
+	BreevoAPIKey     string `json:"breevo_api_key,omitempty"`
+	SendGridAPIKey   string `json:"sendgrid_api_key,omitempty"`
+	MailerSendAPIKey string `json:"mailersend_api_key,omitempty"`
 }
 
 // EmailLog represents an email log entry

@@ -13,6 +13,7 @@ type Config struct {
 	RedisURL         string
 	DatabaseURL      string
 	BreevoAPIKey     string
+	SendGridAPIKey   string
 	MailerSendAPIKey string
 }
 
@@ -36,6 +37,7 @@ func LoadConfig() Config {
 		RedisURL:         getEnv("REDIS_URL", ""),
 		DatabaseURL:      getEnv("DATABASE_URL", ""),
 		BreevoAPIKey:     getEnv("BREEVO_API_KEY", ""),
+		SendGridAPIKey:   getEnv("SENDGRID_API_KEY", ""),
 		MailerSendAPIKey: getEnv("MAILERSEND_API_KEY", ""),
 	}
 }
