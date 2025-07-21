@@ -10,6 +10,7 @@ type EmailRequest struct {
 	ToName      string `json:"to_name"`
 	Subject     string `json:"subject"`
 	HTMLContent string `json:"html_content"`
+	Provider    string `json:"provider,omitempty"` // Optional: specify which provider to use
 	// User-provided API keys
 	BreevoAPIKey     string `json:"breevo_api_key,omitempty"`
 	SendGridAPIKey   string `json:"sendgrid_api_key,omitempty"`
