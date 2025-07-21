@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import MatrixRain from "@/components/MatrixRain"
+import Navigation from "@/components/Navigation"
 
 export default function Home() {
     return (
@@ -22,28 +23,7 @@ export default function Home() {
             </div>
 
             {/* Navigation */}
-            <nav className='fixed top-0 w-full z-50 bg-black/20 backdrop-blur-md border-b border-gray-800'>
-                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-                    <div className='flex justify-between items-center h-16'>
-                        <div className='flex items-center'>
-                            <h1 className='terminal-text text-xl font-bold'>
-                                chitthi
-                            </h1>
-                        </div>
-                        <div className='hidden md:flex space-x-8'>
-                            <Link href='/docs' className='nav-link'>
-                                Documentation
-                            </Link>
-                            <Link
-                                href='https://github.com/imsks/chitthi'
-                                className='nav-link flex items-center gap-2'>
-                                <Github size={16} />
-                                GitHub
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </nav>
+            <Navigation />
 
             {/* Hero Section */}
             <section className='pt-32 pb-20 px-4 sm:px-6 lg:px-8'>
