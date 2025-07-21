@@ -76,6 +76,7 @@ curl -X POST http://localhost:8080/send-email \
 
 -   `X-Breevo-API-Key`: Breevo API key
 -   `X-SendGrid-API-Key`: SendGrid API key
+-   `X-SendGrid-Region`: SendGrid region (`global` or `eu`, defaults to `global`)
 -   `X-MailerSend-API-Key`: MailerSend API key
 
 #### SMTP Credentials
@@ -87,9 +88,59 @@ curl -X POST http://localhost:8080/send-email \
 -   `X-SMTP-From`: From email address
 -   `X-SMTP-Use-TLS`: Use TLS (true/false, default: true)
 
-### Provider Selection
+### Automatic Provider Detection
 
-You can specify which provider to use by adding the `provider` field:
+The system automatically detects which provider to use based on the credentials you provide in the headers. **No need to specify the provider in the request body!**
+
+#### Examples:
+
+**SendGrid (detected automatically):**
+
+```bash
+curl -X POST http://localhost:8080/send-email \
+  -H "Content-Type: application/json" \
+  -H "X-SendGrid-API-Key: your-sendgrid-api-key" \
+  -d '{
+    "from_email": "sender@example.com",
+    "to_email": "recipient@example.com",
+    "subject": "Test Email",
+    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>"
+  }'
+```
+
+**SMTP (detected automatically):**
+
+```bash
+curl -X POST http://localhost:8080/send-email \
+  -H "Content-Type: application/json" \
+  -H "X-SMTP-Host: smtp.gmail.com" \
+  -H "X-SMTP-Username: your-email@gmail.com" \
+  -H "X-SMTP-Password: your-app-password" \
+  -d '{
+    "from_email": "sender@example.com",
+    "to_email": "recipient@example.com",
+    "subject": "Test Email",
+    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>"
+  }'
+```
+
+**Breevo (detected automatically):**
+
+```bash
+curl -X POST http://localhost:8080/send-email \
+  -H "Content-Type: application/json" \
+  -H "X-Breevo-API-Key: your-breevo-api-key" \
+  -d '{
+    "from_email": "sender@example.com",
+    "to_email": "recipient@example.com",
+    "subject": "Test Email",
+    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>"
+  }'
+```
+
+### Provider Selection (Optional)
+
+You can still specify which provider to use by adding the `provider` field, but it must match the detected provider from headers:
 
 ```bash
 curl -X POST http://localhost:8080/send-email \
@@ -154,8 +205,7 @@ curl --location 'http://localhost:8080/send-email' \
    "to_email": "recipient@example.com",
    "to_name": "Recipient Name",
    "subject": "Test Email",
-   "html_content": "<html><body><h1>Hello!</h1><p>This is a test email sent via SMTP.</p></body></html>",
-   "provider": "smtp"
+   "html_content": "<html><body><h1>Hello!</h1><p>This is a test email sent via SMTP.</p></body></html>"
 }'
 ```
 
@@ -171,8 +221,42 @@ curl --location 'http://localhost:8080/send-email' \
    "to_email": "recipient@example.com",
    "to_name": "Recipient Name",
    "subject": "Test Email",
-   "html_content": "<html><body><h1>Hello!</h1><p>This is a test email sent via Breevo.</p></body></html>",
-   "provider": "breevo"
+   "html_content": "<html><body><h1>Hello!</h1><p>This is a test email sent via Breevo.</p></body></html>"
+}'
+```
+
+### Example: Send Email with SendGrid
+
+#### Global Region (Default)
+
+```bash
+curl --location 'http://localhost:8080/send-email' \
+--header 'Content-Type: application/json' \
+--header 'X-SendGrid-API-Key: your-sendgrid-api-key' \
+--data-raw '{
+   "from_email": "sender@example.com",
+   "from_name": "Sender Name",
+   "to_email": "recipient@example.com",
+   "to_name": "Recipient Name",
+   "subject": "Test Email",
+   "html_content": "<html><body><h1>Hello!</h1><p>This is a test email sent via SendGrid.</p></body></html>"
+}'
+```
+
+#### EU Region
+
+```bash
+curl --location 'http://localhost:8080/send-email' \
+--header 'Content-Type: application/json' \
+--header 'X-SendGrid-API-Key: your-sendgrid-api-key' \
+--header 'X-SendGrid-Region: eu' \
+--data-raw '{
+   "from_email": "sender@example.com",
+   "from_name": "Sender Name",
+   "to_email": "recipient@example.com",
+   "to_name": "Recipient Name",
+   "subject": "Test Email",
+   "html_content": "<html><body><h1>Hello!</h1><p>This is a test email sent via SendGrid EU.</p></body></html>"
 }'
 ```
 
@@ -355,6 +439,144 @@ X-SMTP-Password: your-app-password
 X-SMTP-From: your-email@yahoo.com
 X-SMTP-Use-TLS: true
 ```
+
+## 📚 SendGrid Configuration Guide
+
+### Overview
+
+SendGrid is a powerful email delivery service that provides reliable email sending capabilities. The Chitthi email service integrates with SendGrid's v3 Mail Send API, supporting both global and EU regional endpoints.
+
+### SendGrid v3 API Integration
+
+The system uses SendGrid's v3 Mail Send API:
+
+-   **Global Endpoint**: `https://api.sendgrid.com/v3/mail/send`
+-   **EU Endpoint**: `https://api.eu.sendgrid.com/v3/mail/send`
+
+### Environment Configuration
+
+Add the following environment variables to your `.env` file:
+
+```bash
+# SendGrid Configuration
+SENDGRID_API_KEY=your_sendgrid_api_key_here
+SENDGRID_REGION=global  # or "eu" for EU region
+```
+
+### API Key Setup
+
+1. **Create SendGrid Account**: Sign up at [sendgrid.com](https://sendgrid.com)
+2. **Generate API Key**:
+    - Go to Settings → API Keys
+    - Create a new API Key with "Mail Send" permissions
+    - Copy the generated API key
+3. **Verify Sender**: Add and verify your sender email address in SendGrid
+
+### Regional Endpoints
+
+#### Global Region (Default)
+
+-   **Base URL**: `https://api.sendgrid.com`
+-   **Use for**: Global users and subusers
+-   **Configuration**: `SENDGRID_REGION=global` or omit the variable
+
+#### EU Region
+
+-   **Base URL**: `https://api.eu.sendgrid.com`
+-   **Use for**: EU regional subusers
+-   **Configuration**: `SENDGRID_REGION=eu`
+
+### Header-based Configuration
+
+You can also configure SendGrid via HTTP headers:
+
+```bash
+# Global Region
+X-SendGrid-API-Key: your_sendgrid_api_key
+X-SendGrid-Region: global  # Optional, defaults to global
+
+# EU Region
+X-SendGrid-API-Key: your_sendgrid_api_key
+X-SendGrid-Region: eu
+```
+
+### Error Handling
+
+The SendGrid integration includes comprehensive error handling:
+
+-   **Authentication Errors**: Invalid API keys
+-   **Validation Errors**: Missing required fields
+-   **Rate Limiting**: Automatic retry handling
+-   **Regional Errors**: Proper endpoint selection
+
+### Testing SendGrid Integration
+
+Test your SendGrid setup:
+
+```bash
+# Test with Global Region
+curl --location 'http://localhost:8080/send-email' \
+--header 'Content-Type: application/json' \
+--header 'X-SendGrid-API-Key: your-sendgrid-api-key' \
+--data-raw '{
+   "from_email": "verified-sender@yourdomain.com",
+   "from_name": "Your Name",
+   "to_email": "recipient@example.com",
+   "to_name": "Recipient Name",
+   "subject": "SendGrid Test",
+   "html_content": "<h1>Hello from SendGrid!</h1><p>This email was sent via SendGrid v3 API.</p>",
+   "provider": "sendgrid"
+}'
+
+# Test with EU Region
+curl --location 'http://localhost:8080/send-email' \
+--header 'Content-Type: application/json' \
+--header 'X-SendGrid-API-Key: your-sendgrid-api-key' \
+--header 'X-SendGrid-Region: eu' \
+--data-raw '{
+   "from_email": "verified-sender@yourdomain.com",
+   "from_name": "Your Name",
+   "to_email": "recipient@example.com",
+   "to_name": "Recipient Name",
+   "subject": "SendGrid EU Test",
+   "html_content": "<h1>Hello from SendGrid EU!</h1><p>This email was sent via SendGrid EU endpoint.</p>",
+   "provider": "sendgrid"
+}'
+```
+
+### SendGrid Best Practices
+
+1. **Verify Senders**: Always verify your sender email addresses in SendGrid
+2. **Use App Passwords**: For production, use dedicated API keys with minimal permissions
+3. **Monitor Deliverability**: Check SendGrid's Activity Feed for delivery status
+4. **Rate Limits**: Be aware of SendGrid's rate limits (100 emails/second by default)
+5. **Regional Compliance**: Use EU endpoint if you need GDPR compliance
+
+### SendGrid Response Format
+
+When using SendGrid, you'll receive structured JSON responses:
+
+```json
+{
+    "status": true,
+    "message": "Email sent successfully",
+    "data": {
+        "sent_to": "recipient@example.com",
+        "sent_from": "sender@example.com",
+        "subject": "SendGrid Test",
+        "provider": "sendgrid",
+        "log_saved": true,
+        "log_id": 123,
+        "log_error": null
+    }
+}
+```
+
+The response includes:
+
+-   **Provider**: Always shows "sendgrid" for SendGrid emails
+-   **Region**: The region used (global/eu) is logged in the database
+-   **Error Details**: Any SendGrid-specific errors are captured and reported
 
 ## 📚 SMTP Configuration Guide
 

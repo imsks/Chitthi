@@ -14,6 +14,7 @@ type Config struct {
 	DatabaseURL      string
 	BreevoAPIKey     string
 	SendGridAPIKey   string
+	SendGridRegion   string
 	MailerSendAPIKey string
 	SMTPHost         string
 	SMTPPort         string
@@ -44,6 +45,7 @@ func LoadConfig() Config {
 		DatabaseURL:      getEnv("DATABASE_URL", ""),
 		BreevoAPIKey:     getEnv("BREEVO_API_KEY", ""),
 		SendGridAPIKey:   getEnv("SENDGRID_API_KEY", ""),
+		SendGridRegion:   getEnv("SENDGRID_REGION", "global"),
 		MailerSendAPIKey: getEnv("MAILERSEND_API_KEY", ""),
 		SMTPHost:         getEnv("SMTP_HOST", ""),
 		SMTPPort:         getEnv("SMTP_PORT", "587"),

@@ -33,8 +33,14 @@ func (h *Handler) SendEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract credentials from headers
+	// Check if any credentials are provided (either in headers or request body)
 	credentials := extractCredentialsFromHeaders(r)
+	hasCredentials := len(credentials) > 0 || req.BreevoAPIKey != "" || req.SendGridAPIKey != "" || req.MailerSendAPIKey != ""
+
+	if !hasCredentials {
+		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "No email provider credentials provided. Please provide API keys in headers or request body.", "NO_CREDENTIALS_PROVIDED")
+		return
+	}
 
 	// Add credentials to the request
 	req.Credentials = credentials
@@ -62,6 +68,9 @@ func extractCredentialsFromHeaders(r *http.Request) map[string]string {
 	}
 	if apiKey := r.Header.Get("X-SendGrid-API-Key"); apiKey != "" {
 		credentials["sendgrid_api_key"] = apiKey
+	}
+	if region := r.Header.Get("X-SendGrid-Region"); region != "" {
+		credentials["sendgrid_region"] = region
 	}
 	if apiKey := r.Header.Get("X-MailerSend-API-Key"); apiKey != "" {
 		credentials["mailersend_api_key"] = apiKey

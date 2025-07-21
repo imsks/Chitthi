@@ -52,70 +52,64 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 		ToName:      req.ToName,
 		Subject:     req.Subject,
 		HTMLContent: req.HTMLContent,
-		Provider:    req.Provider,
 	}
+
+	// Create providers from headers first
+	headerProviders := s.createProvidersFromHeaders(req.Credentials)
+
+	// Detect provider from headers
+	detectedProvider := s.detectProviderFromHeaders(req.Credentials)
 
 	var provider adapters.EmailProvider
 	var providerName string
 	var err error
 
-	// Create providers from headers first
-	headerProviders := s.createProvidersFromHeaders(req.Credentials)
-
-	// If specific provider is requested, try to use it from headers
+	// If specific provider is requested, validate it matches detected provider
 	if req.Provider != "" {
-		provider = s.getProviderFromList(headerProviders, req.Provider)
-		if provider == nil {
-			// Try fallback providers
-			provider, err = s.getProviderByName(req.Provider)
-			if err != nil {
-				log.Printf("Requested provider '%s' not available: %v", req.Provider, err)
+		if detectedProvider != "" && req.Provider != detectedProvider {
+			log.Printf("⚠️  Provider mismatch: requested '%s' but detected '%s' from headers", req.Provider, detectedProvider)
+			return &SendEmailResult{
+				Success: false,
+				Error:   fmt.Errorf("provider mismatch: requested '%s' but detected '%s' from headers", req.Provider, detectedProvider),
+				EmailData: &model.EmailData{
+					SentTo:   req.ToEmail,
+					SentFrom: req.FromEmail,
+					Subject:  req.Subject,
+					Provider: req.Provider,
+				},
+			}
+		}
+		providerName = req.Provider
+	} else {
+		// Use detected provider from headers
+		if detectedProvider == "" {
+			// No provider detected from headers, try fallback providers
+			if len(s.providers) == 0 {
 				return &SendEmailResult{
 					Success: false,
-					Error:   err,
+					Error:   adapters.ErrNoProvidersAvailable,
 					EmailData: &model.EmailData{
 						SentTo:   req.ToEmail,
 						SentFrom: req.FromEmail,
 						Subject:  req.Subject,
-						Provider: req.Provider,
 					},
 				}
 			}
-		}
-		providerName = req.Provider
-		log.Printf("📧 Using requested provider: %s", providerName)
-	} else {
-		// Try header-based providers first, then fallback to config-based providers
-		if len(headerProviders) > 0 {
-			// Try each header provider until one succeeds
+
+			// Try fallback providers
 			var lastError error
-			for _, p := range headerProviders {
+			for _, p := range s.providers {
 				err := p.SendEmail(emailReq)
 				if err == nil {
 					providerName = p.GetName()
-					log.Printf("📧 Email sent successfully via header provider: %s", providerName)
+					log.Printf("📧 Email sent successfully via fallback provider: %s", providerName)
 					break
 				}
 				lastError = err
-				log.Printf("⚠️  Header provider %s failed: %v", p.GetName(), err)
-			}
-
-			if lastError != nil && len(s.providers) > 0 {
-				// Try fallback providers if header providers failed
-				for _, p := range s.providers {
-					err := p.SendEmail(emailReq)
-					if err == nil {
-						providerName = p.GetName()
-						log.Printf("📧 Email sent successfully via fallback provider: %s", providerName)
-						break
-					}
-					lastError = err
-					log.Printf("⚠️  Fallback provider %s failed: %v", p.GetName(), err)
-				}
+				log.Printf("⚠️  Fallback provider %s failed: %v", p.GetName(), err)
 			}
 
 			if lastError != nil {
-				// Log failure but don't return error - email sending failed
 				s.logEmailAttempt(ctx, req, "all_failed", "failed", lastError)
 				return &SendEmailResult{
 					Success:  false,
@@ -130,39 +124,28 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 				}
 			}
 		} else {
-			// Try to get provider from user-provided API keys (legacy support)
-			if req.BreevoAPIKey != "" || req.SendGridAPIKey != "" || req.MailerSendAPIKey != "" {
-				provider, err = adapters.GetProviderFromRequest(req.BreevoAPIKey, req.SendGridAPIKey, req.MailerSendAPIKey)
-				if err != nil {
-					log.Printf("Failed to create provider from user API keys: %v", err)
-					return &SendEmailResult{
-						Success: false,
-						Error:   err,
-						EmailData: &model.EmailData{
-							SentTo:   req.ToEmail,
-							SentFrom: req.FromEmail,
-							Subject:  req.Subject,
-						},
-					}
-				}
-				providerName = provider.GetName()
-				log.Printf("📧 Using user-provided API key for provider: %s", providerName)
-			} else {
-				// Fallback to config-based providers with load balancing
-				if len(s.providers) == 0 {
-					return &SendEmailResult{
-						Success: false,
-						Error:   adapters.ErrNoProvidersAvailable,
-						EmailData: &model.EmailData{
-							SentTo:   req.ToEmail,
-							SentFrom: req.FromEmail,
-							Subject:  req.Subject,
-						},
-					}
-				}
+			providerName = detectedProvider
+			log.Printf("📧 Using detected provider: %s", providerName)
+		}
+	}
 
-				// Simple failover - try each provider until one succeeds
-				var lastError error
+	// If we have header providers, try them first
+	if len(headerProviders) > 0 {
+		var lastError error
+		for _, p := range headerProviders {
+			err := p.SendEmail(emailReq)
+			if err == nil {
+				providerName = p.GetName()
+				log.Printf("📧 Email sent successfully via header provider: %s", providerName)
+				break
+			}
+			lastError = err
+			log.Printf("⚠️  Header provider %s failed: %v", p.GetName(), err)
+		}
+
+		if lastError != nil {
+			// Try fallback providers if header providers failed
+			if len(s.providers) > 0 {
 				for _, p := range s.providers {
 					err := p.SendEmail(emailReq)
 					if err == nil {
@@ -171,47 +154,60 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 						break
 					}
 					lastError = err
-					log.Printf("⚠️  Provider %s failed: %v", p.GetName(), err)
+					log.Printf("⚠️  Fallback provider %s failed: %v", p.GetName(), err)
 				}
+			}
 
-				if lastError != nil {
-					// Log failure but don't return error - email sending failed
-					s.logEmailAttempt(ctx, req, "all_failed", "failed", lastError)
-					return &SendEmailResult{
-						Success:  false,
-						Error:    lastError,
+			if lastError != nil {
+				s.logEmailAttempt(ctx, req, "all_failed", "failed", lastError)
+				return &SendEmailResult{
+					Success:  false,
+					Error:    lastError,
+					Provider: "all_failed",
+					EmailData: &model.EmailData{
+						SentTo:   req.ToEmail,
+						SentFrom: req.FromEmail,
+						Subject:  req.Subject,
 						Provider: "all_failed",
-						EmailData: &model.EmailData{
-							SentTo:   req.ToEmail,
-							SentFrom: req.FromEmail,
-							Subject:  req.Subject,
-							Provider: "all_failed",
-						},
-					}
+					},
 				}
 			}
 		}
-	}
+	} else {
+		// No header providers, try legacy API keys in request body
+		if req.BreevoAPIKey != "" || req.SendGridAPIKey != "" || req.MailerSendAPIKey != "" {
+			provider, err = adapters.GetProviderFromRequest(req.BreevoAPIKey, req.SendGridAPIKey, req.MailerSendAPIKey)
+			if err != nil {
+				log.Printf("Failed to create provider from user API keys: %v", err)
+				return &SendEmailResult{
+					Success: false,
+					Error:   err,
+					EmailData: &model.EmailData{
+						SentTo:   req.ToEmail,
+						SentFrom: req.FromEmail,
+						Subject:  req.Subject,
+					},
+				}
+			}
+			providerName = provider.GetName()
+			log.Printf("📧 Using user-provided API key for provider: %s", providerName)
 
-	// If we have a specific provider, send the email
-	if provider != nil {
-		err = provider.SendEmail(emailReq)
-		if err != nil {
-			// Log failure but don't return error - email sending failed
-			s.logEmailAttempt(ctx, req, providerName, "failed", err)
-			return &SendEmailResult{
-				Success:  false,
-				Error:    err,
-				Provider: providerName,
-				EmailData: &model.EmailData{
-					SentTo:   req.ToEmail,
-					SentFrom: req.FromEmail,
-					Subject:  req.Subject,
+			err = provider.SendEmail(emailReq)
+			if err != nil {
+				s.logEmailAttempt(ctx, req, providerName, "failed", err)
+				return &SendEmailResult{
+					Success:  false,
+					Error:    err,
 					Provider: providerName,
-				},
+					EmailData: &model.EmailData{
+						SentTo:   req.ToEmail,
+						SentFrom: req.FromEmail,
+						Subject:  req.Subject,
+						Provider: providerName,
+					},
+				}
 			}
 		}
-		log.Printf("📧 Email sent successfully via provider: %s", providerName)
 	}
 
 	// Email sent successfully, now log it
@@ -289,7 +285,11 @@ func (s *Service) createProvidersFromHeaders(credentials map[string]string) []ad
 
 	// Create SendGrid provider if API key is provided
 	if apiKey := credentials["sendgrid_api_key"]; apiKey != "" {
-		providers = append(providers, &adapters.SendGridAdapter{APIKey: apiKey})
+		region := credentials["sendgrid_region"]
+		if region == "" {
+			region = "global" // Default to global
+		}
+		providers = append(providers, adapters.NewSendGridAdapter(apiKey, region))
 	}
 
 	// Create MailerSend provider if API key is provided
@@ -332,4 +332,25 @@ func (s *Service) getProviderFromList(providers []adapters.EmailProvider, name s
 		}
 	}
 	return nil
+}
+
+// detectProviderFromHeaders automatically detects which provider to use based on headers
+func (s *Service) detectProviderFromHeaders(credentials map[string]string) string {
+	// Check for SMTP credentials first (most specific)
+	if credentials["smtp_host"] != "" {
+		return "smtp"
+	}
+
+	// Check for API keys
+	if credentials["breevo_api_key"] != "" {
+		return "breevo"
+	}
+	if credentials["sendgrid_api_key"] != "" {
+		return "sendgrid"
+	}
+	if credentials["mailersend_api_key"] != "" {
+		return "mailersend"
+	}
+
+	return "" // No provider detected
 }
