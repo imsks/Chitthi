@@ -3,9 +3,11 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "go build -o ./tmp/main ./cmd"
+  cmd = "go build -o ./tmp/main ./cmd/main.go"
   bin = "tmp/main"
-  include_ext = ["go"]
-  exclude_dir = ["tmp", "vendor"]
-  exclude_file = []
-  delay = 1000
+  full_bin = "tmp/main"
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  exclude_dir = ["assets", "tmp", "vendor"]
+
+[log]
+  time = true

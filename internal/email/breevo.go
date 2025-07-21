@@ -50,3 +50,11 @@ func (b *BreevoAdapter) SendEmail(email model.EmailRequest) error {
 	}
 	return nil
 }
+
+func (b *BreevoAdapter) GetName() string {
+	return "breevo"
+}
+
+func (b *BreevoAdapter) IsAvailable() bool {
+	return b.APIKey != ""
+}
