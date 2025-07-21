@@ -17,8 +17,8 @@ func CreateProvidersFromConfig(cfg config.Config) []EmailProvider {
 	}
 
 	if cfg.SendGridAPIKey != "" {
-		providers = append(providers, &SendGridAdapter{APIKey: cfg.SendGridAPIKey})
-		log.Println("🚀 SendGrid provider added from config")
+		providers = append(providers, NewSendGridAdapter(cfg.SendGridAPIKey, cfg.SendGridRegion))
+		log.Printf("🚀 SendGrid provider added from config (region: %s)", cfg.SendGridRegion)
 	}
 
 	if cfg.MailerSendAPIKey != "" {
@@ -57,7 +57,7 @@ func CreateProviderFromAPIKey(apiKey, keyName string) (EmailProvider, error) {
 	case "BREEVO_API_KEY":
 		return &BreevoAdapter{APIKey: apiKey}, nil
 	case "SENDGRID_API_KEY":
-		return &SendGridAdapter{APIKey: apiKey}, nil
+		return NewSendGridAdapter(apiKey, ""), nil
 	case "MAILERSEND_API_KEY":
 		return &MailerSendAdapter{APIKey: apiKey}, nil
 	default:

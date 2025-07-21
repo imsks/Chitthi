@@ -1,29 +1,88 @@
-# 📬 Chitthi — Email Sending Microservice
+# 📬 Chitthi
 
-Chitthi is a lightweight email-sending microservice built in Go.  
-It supports multiple third-party providers like Breevo, SendGrid, MailerSend, and SMTP with features like BYOK (Bring Your Own Key), header-based credentials, request logging, Redis caching, and more.
+[![Go Version](https://img.shields.io/badge/Go-1.24.3-blue.svg)](https://golang.org)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
 
----
-
-## ✅ Features
-
--   Send HTML emails via multiple providers (Breevo, SendGrid, MailerSend, SMTP)
--   **BYOK (Bring Your Own Key)** - Users can pass their own API keys
--   **Header-based Credentials** - Secure credential management via HTTP headers
--   **SMTP Support** - Direct SMTP integration with STARTTLS support
--   **Provider Selection** - Choose specific email providers
--   Fallback to configured API keys when user keys not provided
--   Cache usage in Redis
--   Log send events in Postgres
--   Pluggable payload mapping for different providers
+A lightweight, production-ready email microservice built in Go with **BYOK (Bring Your Own Key)** approach and multi-provider support.
 
 ---
 
-## 🚀 API Usage
+## 📋 Table of Contents
 
-### Method 1: Header-based Credentials (Recommended)
+-   [Overview](#overview)
+-   [Features](#features)
+-   [Quick Start](#quick-start)
+-   [API Documentation](#api-documentation)
+-   [Email Providers](#email-providers)
+-   [Configuration](#configuration)
+-   [Development](#development)
+-   [Deployment](#deployment)
+-   [Contributing](#contributing)
 
-Users can pass their credentials securely via HTTP headers:
+---
+
+## 🎯 Overview
+
+Chitthi is a modern email microservice designed for developers who want simplicity without sacrificing power. Built with Go, it provides a clean REST API for sending emails through multiple providers while maintaining complete control over your API keys.
+
+### Key Benefits
+
+-   **🔐 BYOK Security**: Bring Your Own Key approach ensures your API keys stay secure
+-   **🔄 Multi-Provider**: Support for Breevo, SendGrid, MailerSend, and SMTP
+-   **⚡ Header-based Credentials**: Secure credential management via HTTP headers
+-   **🧠 Smart Routing**: Automatic provider detection based on credentials
+-   **📊 Comprehensive Logging**: PostgreSQL-based email tracking and analytics
+-   **🚀 Production Ready**: Redis caching, error handling, and monitoring
+
+---
+
+## ✨ Features
+
+-   ✅ **Multi-Provider Support**: Breevo, SendGrid, MailerSend, SMTP
+-   ✅ **BYOK (Bring Your Own Key)**: Users provide their own API keys
+-   ✅ **Header-based Credentials**: Secure credential management
+-   ✅ **Automatic Provider Detection**: Smart routing based on credentials
+-   ✅ **Redis Caching**: Performance optimization
+-   ✅ **PostgreSQL Logging**: Comprehensive email tracking
+-   ✅ **Docker Ready**: Containerized deployment
+-   ✅ **Production Ready**: Error handling, logging, monitoring
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+-   **Docker & Docker Compose**
+-   **Go 1.24.3+** (for development)
+-   **Git**
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/imsks/chitthi.git
+cd chitthi
+```
+
+### 2. Start Infrastructure
+
+```bash
+# Start Redis and PostgreSQL
+docker compose up redis db -d
+```
+
+### 3. Run the Service
+
+```bash
+# Development with hot reload
+air
+
+# Or run directly
+go run cmd/main.go
+```
+
+### 4. Test the API
 
 ```bash
 curl -X POST http://localhost:8080/send-email \
@@ -36,423 +95,365 @@ curl -X POST http://localhost:8080/send-email \
   -H "X-SMTP-Use-TLS: true" \
   -d '{
     "from_email": "sender@example.com",
-    "from_name": "Sender Name",
     "to_email": "recipient@example.com",
-    "to_name": "Recipient Name",
     "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>",
-    "provider": "smtp"
+    "html_content": "<h1>Hello World!</h1>"
   }'
 ```
 
-### Method 2: API Keys in Request Body (Legacy)
+---
 
-Users can pass their own API keys in the request body:
+## 📚 API Documentation
 
-```bash
-curl -X POST http://localhost:8080/send-email \
-  -H "Content-Type: application/json" \
-  -d '{
+### Endpoints
+
+| Method | Endpoint      | Description                 |
+| ------ | ------------- | --------------------------- |
+| `POST` | `/send-email` | Send email via any provider |
+| `GET`  | `/email-logs` | Retrieve email logs         |
+| `GET`  | `/`           | Health check                |
+
+### Send Email
+
+**Endpoint**: `POST /send-email`
+
+**Headers**:
+
+-   `Content-Type: application/json`
+-   `X-SMTP-*` (for SMTP)
+-   `X-SendGrid-API-Key` (for SendGrid)
+-   `X-Breevo-API-Key` (for Breevo)
+-   `X-MailerSend-API-Key` (for MailerSend)
+
+**Request Body**:
+
+```json
+{
     "from_email": "sender@example.com",
     "from_name": "Sender Name",
     "to_email": "recipient@example.com",
     "to_name": "Recipient Name",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>",
-    "breevo_api_key": "your_breevo_api_key_here"
-  }'
+    "subject": "Email Subject",
+    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>"
+}
 ```
+
+**Response**:
+
+```json
+{
+    "status": true,
+    "message": "Email sent successfully",
+    "data": {
+        "sent_to": "recipient@example.com",
+        "sent_from": "sender@example.com",
+        "subject": "Email Subject",
+        "provider": "smtp",
+        "log_saved": true,
+        "log_id": 123
+    }
+}
+```
+
+### Get Email Logs
+
+**Endpoint**: `GET /email-logs`
+
+**Query Parameters**:
+
+-   `limit` (optional): Number of logs to return (default: 10)
+-   `offset` (optional): Number of logs to skip (default: 0)
+
+**Response**:
+
+```json
+{
+    "status": true,
+    "data": [
+        {
+            "id": 1,
+            "recipient_email": "recipient@example.com",
+            "subject": "Test Email",
+            "provider": "smtp",
+            "status": "sent",
+            "created_at": "2024-01-01T12:00:00Z"
+        }
+    ]
+}
+```
+
+---
+
+## 📧 Email Providers
 
 ### Supported Providers
 
-1. **SMTP** - Use SMTP headers or configure in environment
-2. **Breevo** - Use `X-Breevo-API-Key` header or `breevo_api_key` in request
-3. **SendGrid** - Use `X-SendGrid-API-Key` header or `sendgrid_api_key` in request
-4. **MailerSend** - Use `X-MailerSend-API-Key` header or `mailersend_api_key` in request
+| Provider       | Header Key             | Description               |
+| -------------- | ---------------------- | ------------------------- |
+| **SMTP**       | `X-SMTP-*`             | Direct SMTP with STARTTLS |
+| **SendGrid**   | `X-SendGrid-API-Key`   | SendGrid v3 API           |
+| **Breevo**     | `X-Breevo-API-Key`     | Breevo Email API          |
+| **MailerSend** | `X-MailerSend-API-Key` | MailerSend API            |
 
-### Available Header Credentials
+### Provider Examples
 
-#### API Keys
-
--   `X-Breevo-API-Key`: Breevo API key
--   `X-SendGrid-API-Key`: SendGrid API key
--   `X-MailerSend-API-Key`: MailerSend API key
-
-#### SMTP Credentials
-
--   `X-SMTP-Host`: SMTP server hostname
--   `X-SMTP-Port`: SMTP port (default: 587)
--   `X-SMTP-Username`: SMTP username
--   `X-SMTP-Password`: SMTP password
--   `X-SMTP-From`: From email address
--   `X-SMTP-Use-TLS`: Use TLS (true/false, default: true)
-
-### Provider Selection
-
-You can specify which provider to use by adding the `provider` field:
+#### SendGrid
 
 ```bash
 curl -X POST http://localhost:8080/send-email \
   -H "Content-Type: application/json" \
-  -H "X-SMTP-Host: smtp.gmail.com" \
-  -H "X-SMTP-Username: your-email@gmail.com" \
-  -H "X-SMTP-Password: your-app-password" \
+  -H "X-SendGrid-API-Key: your-sendgrid-api-key" \
   -d '{
     "from_email": "sender@example.com",
     "to_email": "recipient@example.com",
     "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>",
-    "provider": "smtp"
+    "html_content": "<h1>Hello World!</h1>"
   }'
 ```
 
-### Priority Order
+#### Breevo
 
-When multiple providers are available, the system uses this priority order:
+```bash
+curl -X POST http://localhost:8080/send-email \
+  -H "Content-Type: application/json" \
+  -H "X-Breevo-API-Key: your-breevo-api-key" \
+  -d '{
+    "from_email": "sender@example.com",
+    "to_email": "recipient@example.com",
+    "subject": "Test Email",
+    "html_content": "<h1>Hello World!</h1>"
+  }'
+```
+
+#### MailerSend
+
+```bash
+curl -X POST http://localhost:8080/send-email \
+  -H "Content-Type: application/json" \
+  -H "X-MailerSend-API-Key: your-mailersend-api-key" \
+  -d '{
+    "from_email": "sender@example.com",
+    "to_email": "recipient@example.com",
+    "subject": "Test Email",
+    "html_content": "<h1>Hello World!</h1>"
+  }'
+```
+
+### Provider Priority
 
 1. **Header-based providers** (highest priority)
 2. **Request body API keys** (legacy support)
 3. **Environment-configured providers** (fallback)
 
-### Fallback Mode
+---
 
-If no credentials are provided, the system will use the configured credentials from environment variables:
+## ⚙️ Configuration
 
-```bash
-curl -X POST http://localhost:8080/send-email \
-  -H "Content-Type: application/json" \
-  -d '{
-    "from_email": "sender@example.com",
-    "from_name": "Sender Name",
-    "to_email": "recipient@example.com",
-    "to_name": "Recipient Name",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>"
-  }'
-```
+### Environment Variables
 
-### Check Email Logs
+Create a `.env` file in the root directory:
 
-```bash
-curl http://localhost:8080/email-logs?limit=10
-```
+```env
+# Server Configuration
+PORT=8080
 
-### Example: Send Email with SMTP
+# Database Configuration
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable
 
-```bash
-curl --location 'http://localhost:8080/send-email' \
---header 'Content-Type: application/json' \
---header 'X-SMTP-Host: smtp.gmail.com' \
---header 'X-SMTP-Port: 587' \
---header 'X-SMTP-Username: your-email@gmail.com' \
---header 'X-SMTP-Password: your-app-password' \
---header 'X-SMTP-From: your-email@gmail.com' \
---header 'X-SMTP-Use-TLS: true' \
---data-raw '{
-   "from_email": "your-email@gmail.com",
-   "from_name": "Your Name",
-   "to_email": "recipient@example.com",
-   "to_name": "Recipient Name",
-   "subject": "Test Email",
-   "html_content": "<html><body><h1>Hello!</h1><p>This is a test email sent via SMTP.</p></body></html>",
-   "provider": "smtp"
-}'
-```
+# Redis Configuration
+REDIS_URL=redis://localhost:6379
 
-### Example: Send Email with Breevo
+# Email Provider Configuration (Optional - for fallback)
+BREEVO_API_KEY=your_breevo_api_key
+SENDGRID_API_KEY=your_sendgrid_api_key
+SENDGRID_REGION=global
+MAILERSEND_API_KEY=your_mailersend_api_key
 
-```bash
-curl --location 'http://localhost:8080/send-email' \
---header 'Content-Type: application/json' \
---header 'X-Breevo-API-Key: your-breevo-api-key' \
---data-raw '{
-   "from_email": "sender@example.com",
-   "from_name": "Sender Name",
-   "to_email": "recipient@example.com",
-   "to_name": "Recipient Name",
-   "subject": "Test Email",
-   "html_content": "<html><body><h1>Hello!</h1><p>This is a test email sent via Breevo.</p></body></html>",
-   "provider": "breevo"
-}'
+# SMTP Configuration (Optional - for fallback)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=your-email@gmail.com
+SMTP_USE_TLS=true
 ```
 
 ---
 
-### Folder Structure
+## 🛠️ Development
+
+### Project Structure
 
 ```
 chitthi/
-├── cmd/ # Entry point
-│ └── main.go
-├── internal/ # All core business logic
-│ ├── config/ # .env loading
-│ ├── database/ # Postgres logic
-│ ├── email/ # Provider-specific logic (Breevo, SendGrid, MailerSend, SMTP)
-│ ├── handler/ # HTTP handlers
-│ ├── model/ # Structs: EmailJob, Logs etc.
-│ └── modules/ # Business logic modules
-│   └── email/ # Email service and handlers
-├── migrations/ # Database migrations
-├── .env
-├── go.mod
-├── go.sum
-└── README.md
+├── cmd/                    # Application entry point
+│   └── main.go
+├── internal/               # Core business logic
+│   ├── config/            # Configuration management
+│   ├── database/          # Database connections
+│   ├── email/             # Email provider implementations
+│   ├── handler/           # HTTP handlers
+│   ├── model/             # Data models
+│   └── modules/           # Business logic modules
+├── migrations/            # Database migrations
+├── docker-compose.yml     # Infrastructure setup
+├── Dockerfile            # Container configuration
+└── go.mod               # Go dependencies
 ```
 
-### Run the App
+### Development Commands
 
 ```bash
-go run cmd/main.go
-```
-
-## 🚀 Run Locally (for Development)
-
-### 1. Clone the repo & setup Go modules
-
-```bash
-git clone https://github.com/yourname/chitthi.git
-cd chitthi
-go mod tidy
-```
-
-### 2. Start Redis & Postgres with Docker
-
-```bash
-docker compose up redis db
-```
-
-### 3. Run the Go app with hot reload (requires air)
-
-```bash
+# Run with hot reload (requires air)
 air
+
+# Run directly
+go run cmd/main.go
+
+# Run tests
+go test ./...
+
+# Build for production
+go build -o main cmd/main.go
 ```
 
-## 🐳 Run with Docker (no hot reload)
+### Database Migrations
 
 ```bash
-docker compose up --build
-```
-
-## 📦 Production Build
-
-```bash
-docker build -t chitthi-app .
-```
-
-## Migration Guide
-
-### Create Email Logs Table
-
-```
-migrate create -ext sql -dir migrations -seq create_email_logs_table
-```
-
-### Run Migrations
-
-1. Locally
-
-```
+# Run migrations
 migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up
+
+# Rollback migrations
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down
 ```
 
-## Connect to DB
+---
 
-1. Connect using Docker CLI
+## 🚀 Deployment
+
+### Docker Deployment
 
 ```bash
-docker exec -it chitthi_db psql -U postgres -d chitthi
+# Start all services
+docker compose up --build
+
+# Run in background
+docker compose up -d --build
+
+# View logs
+docker compose logs -f
 ```
 
-2. Inside the Postgres CLI:
-
-```sql
-\dt
-```
-
-3. Check the structure of the a table:
-
-```
-\d email_logs
-```
-
-4. Run SQL Query in Postgres CLI
-
-```sql
-SELECT * FROM email_logs LIMIT 5;
-```
-
-### Roadmap
-
-🔌 API Endpoints (WIP)
-• POST /send-email: Send email via configured provider
-• GET /usage: View usage stats (coming)
-• POST /register-key: (optional for public launch)
-
-### 👀 Roadmap
-
-• Usage stats (GET /usage)
-• Rate limiting via Redis
-• RabbitMQ-based queue system
-• Admin Dashboard (V2)
-• Templates, Contacts, Logs (V2)
-• Multi-tenant support
-• Email templates
-• Bulk email sending
-
-### Tech Stack
-
-    •	Golang
-    •	Redis (usage tracking)
-    •	Postgres (logging)
-    •	Docker + Compose
-    •	Breevo (Email API)
-    •	SendGrid (Email API)
-    •	MailerSend (Email API)
-    •	SMTP (Direct email sending)
-
-## 🔐 Security Best Practices
-
-### SMTP Configuration
-
-When using SMTP, follow these security guidelines:
-
-1. **Use App Passwords**: For Gmail, use App Passwords instead of your regular password
-2. **Enable 2FA**: Enable two-factor authentication on your email account
-3. **Use Environment Variables**: Store sensitive credentials in environment variables for production
-4. **HTTPS Only**: Always use HTTPS in production to protect credentials in headers
-
-### Popular SMTP Providers
-
-#### Gmail
+### Production Deployment
 
 ```bash
-X-SMTP-Host: smtp.gmail.com
-X-SMTP-Port: 587
-X-SMTP-Username: your-email@gmail.com
-X-SMTP-Password: your-app-password
-X-SMTP-From: your-email@gmail.com
-X-SMTP-Use-TLS: true
+# Build production image
+docker build -t chitthi-app .
+
+# Run with environment variables
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://..." \
+  -e REDIS_URL="redis://..." \
+  chitthi-app
 ```
 
-#### Outlook/Hotmail
+### Production Checklist
+
+-   [ ] Set `APP_ENV=production`
+-   [ ] Configure database URLs
+-   [ ] Set API keys for email providers
+-   [ ] Set up Redis for caching
+-   [ ] Configure logging levels
+-   [ ] Set up monitoring and alerting
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these steps:
+
+### 1. Fork the Repository
 
 ```bash
-X-SMTP-Host: smtp-mail.outlook.com
-X-SMTP-Port: 587
-X-SMTP-Username: your-email@outlook.com
-X-SMTP-Password: your-password
-X-SMTP-From: your-email@outlook.com
-X-SMTP-Use-TLS: true
+git clone https://github.com/imsks/chitthi.git
+cd chitthi
 ```
 
-#### Yahoo
+### 2. Create a Feature Branch
 
 ```bash
-X-SMTP-Host: smtp.mail.yahoo.com
-X-SMTP-Port: 587
-X-SMTP-Username: your-email@yahoo.com
-X-SMTP-Password: your-app-password
-X-SMTP-From: your-email@yahoo.com
-X-SMTP-Use-TLS: true
+git checkout -b feature/your-feature-name
 ```
 
-## 📚 SMTP Configuration Guide
+### 3. Make Your Changes
 
-### Overview
+-   Follow the existing code style
+-   Add tests for new functionality
+-   Update documentation as needed
 
-The email service supports SMTP as an additional email provider alongside Breevo, SendGrid, and MailerSend. SMTP will be used as a fallback option if other providers fail.
-
-### Environment Configuration
-
-Add the following environment variables to your `.env` file:
+### 4. Test Your Changes
 
 ```bash
-# SMTP Configuration
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM=your-email@gmail.com
-SMTP_USE_TLS=true
+go test ./...
 ```
 
-### Popular SMTP Providers
+### 5. Submit a Pull Request
 
-#### Gmail
+-   Provide a clear description of your changes
+-   Include any relevant issue numbers
+-   Ensure all tests pass
 
-```bash
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password  # Use App Password, not regular password
-SMTP_FROM=your-email@gmail.com
-SMTP_USE_TLS=true
-```
+### Development Guidelines
 
-#### Outlook/Hotmail
+-   **Code Style**: Follow Go conventions
+-   **Documentation**: Update README and API docs
+-   **Testing**: Add tests for new features
+-   **Security**: Follow security best practices
+-   **Performance**: Consider performance implications
 
-```bash
-SMTP_HOST=smtp-mail.outlook.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@outlook.com
-SMTP_PASSWORD=your-password
-SMTP_FROM=your-email@outlook.com
-SMTP_USE_TLS=true
-```
+---
 
-#### Yahoo
+## 📄 License
 
-```bash
-SMTP_HOST=smtp.mail.yahoo.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@yahoo.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM=your-email@yahoo.com
-SMTP_USE_TLS=true
-```
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-#### Custom SMTP Server
+---
 
-```bash
-SMTP_HOST=your-smtp-server.com
-SMTP_PORT=587
-SMTP_USERNAME=your-username
-SMTP_PASSWORD=your-password
-SMTP_FROM=your-email@your-domain.com
-SMTP_USE_TLS=true
-```
+## 🆘 Support
 
-### How It Works
+### Getting Help
 
-1. **Fallback System**: SMTP will be used as a fallback if other providers (Breevo, SendGrid, MailerSend) fail
-2. **Priority Order**: Breevo → SendGrid → MailerSend → SMTP
-3. **No API Changes**: The existing API endpoints remain unchanged
-4. **Automatic Selection**: The system automatically tries each available provider until one succeeds
+1. **Check Documentation**: Review this README and API docs
+2. **Search Issues**: Look for similar issues in the repository
+3. **Create Issue**: Open a new issue with detailed information
+4. **Community**: Join our community discussions
 
-### Security Notes
+### Common Issues
 
--   For Gmail, use App Passwords instead of your regular password
--   Enable 2-factor authentication on your email account
--   Use environment variables for sensitive information
--   Consider using dedicated email services for production
+-   **Database Connection**: Ensure PostgreSQL is running and accessible
+-   **Email Delivery**: Check provider API keys and credentials
+-   **Redis Connection**: Verify Redis is running on the correct port
 
-### Testing
+### Contact
 
-After configuration, test with:
+-   **Email**: sachinkshuklaoo7@email.com
+-   **Issues**: [GitHub Issues](https://github.com/imsks/chitthi/issues)
+-   **Discussions**: [GitHub Discussions](https://github.com/imsks/chitthi/discussions)
 
-```bash
-curl --location 'http://localhost:8080/send-email' \
---header 'Content-Type: application/json' \
---data-raw '{
-   "from_email": "your-email@gmail.com",
-   "from_name": "Your Name",
-   "to_email": "recipient@example.com",
-   "to_name": "Recipient Name",
-   "subject":"Test Email",
-   "html_content":"<html><body><h1>Hello!</h1><p>This is a test email sent via SMTP.</p></body></html>"
-}'
-```
+---
 
-## 👋 Contribute
+## 🎯 Roadmap
 
-Want to contribute? Fork this repo or reach out at sachinkshuklaoo7@email.com
+-   [ ] **Rate Limiting**: Redis-based rate limiting
+-   [ ] **Queue System**: RabbitMQ integration for async processing
+-   [ ] **Admin Dashboard**: Web interface for monitoring
+-   [ ] **Email Templates**: Template management system
+-   [ ] **Bulk Sending**: Support for bulk email operations
+-   [ ] **Analytics**: Email delivery analytics and reporting
+-   [ ] **Multi-tenant**: Support for multiple organizations
+
+---
+
+**Built with ❤️ by Sachin in 🇮🇳**
+
+_Chitthi - Empowering developers with simple email solutions_
