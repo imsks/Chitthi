@@ -1,922 +1,456 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { 
-  Mail, ArrowLeft, Copy, CheckCircle, ExternalLink, 
-  Code, Database, Shield, Globe, Zap, Settings,
-  Book, FileText, Link as LinkIcon, Hash, ChevronRight
-} from "lucide-react";
-import Link from "next/link";
-import { motion } from "framer-motion";
-
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 }
-};
+import { motion } from "framer-motion"
+import {
+    ArrowLeft,
+    Mail,
+    Code,
+    Zap,
+    Shield,
+    Github,
+    Copy,
+    Check
+} from "lucide-react"
+import Link from "next/link"
+import { useState } from "react"
+import Navigation from "@/components/Navigation"
+import Sidebar from "@/components/Sidebar"
+import TableOfContents from "@/components/TableOfContents"
 
 export default function DocsPage() {
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+    const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
-  const copyToClipboard = (code: string, id: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(id);
-    setTimeout(() => setCopiedCode(null), 2000);
-  };
-
-  const sidebarItems = [
-    { id: "overview", label: "Overview", icon: Book },
-    { id: "quick-start", label: "Quick Start", icon: Zap },
-    { id: "api", label: "API Reference", icon: Code },
-    { id: "providers", label: "Email Providers", icon: Globe },
-    { id: "configuration", label: "Configuration", icon: Settings },
-    { id: "deployment", label: "Deployment", icon: Database },
-  ];
-
-  const [activeSection, setActiveSection] = useState("overview");
-
-  const CodeBlock = ({ code, language = "bash", id }: { code: string; language?: string; id: string }) => (
-    <div className="relative">
-      <Card className="bg-gray-900 text-white border-0 overflow-hidden">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="ml-4 text-sm text-gray-400">{language}</span>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-gray-400 hover:text-white h-8 px-2"
-              onClick={() => copyToClipboard(code, id)}
-            >
-              {copiedCode === id ? (
-                <CheckCircle className="w-4 h-4" />
-              ) : (
-                <Copy className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <pre className="text-sm overflow-x-auto">
-            <code>{code}</code>
-          </pre>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Link>
-            </Button>
-            <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <Mail className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-xl font-bold">Chitthi Docs</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <Button asChild variant="outline" size="sm">
-              <a href="https://github.com/imsks/chitthi" target="_blank" rel="noopener noreferrer">
-                GitHub
-                <ExternalLink className="w-4 h-4 ml-2" />
-              </a>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8 grid lg:grid-cols-4 gap-8">
-        {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <Card className="sticky top-24">
-            <CardHeader>
-              <CardTitle className="text-lg">Documentation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-96">
-                <nav className="space-y-1">
-                  {sidebarItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveSection(item.id)}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors flex items-center space-x-2 ${
-                        activeSection === item.id
-                          ? "bg-blue-100 text-blue-700 font-medium"
-                          : "hover:bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </nav>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        <div className="lg:col-span-3">
-          <motion.div
-            key={activeSection}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            {activeSection === "overview" && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">Chitthi Documentation</h1>
-                  <p className="text-xl text-gray-600 mb-6">
-                    A lightweight, production-ready email microservice built in Go with BYOK approach and multi-provider support.
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-8">
-                    <Badge className="bg-blue-100 text-blue-800">Go 1.24.3</Badge>
-                    <Badge className="bg-green-100 text-green-800">MIT License</Badge>
-                    <Badge className="bg-purple-100 text-purple-800">Docker Ready</Badge>
-                    <Badge className="bg-yellow-100 text-yellow-800">Production Ready</Badge>
-                  </div>
-                </div>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Shield className="w-5 h-5 mr-2 text-green-600" />
-                      Key Benefits
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {[
-                        "🔐 BYOK Security - Your keys stay secure",
-                        "🔄 Multi-Provider Support - 4+ email providers",
-                        "⚡ Header-based Credentials - Secure management",
-                        "🧠 Smart Routing - Automatic provider detection",
-                        "📊 PostgreSQL Logging - Email tracking",
-                        "🚀 Redis Caching - Performance optimization"
-                      ].map((benefit, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                          <span className="text-gray-700">{benefit.split(' - ')[0]}</span>
-                          <span className="text-gray-500">- {benefit.split(' - ')[1]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Architecture Overview</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 mb-4">
-                      Chitthi follows a microservice architecture with clean separation of concerns:
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Code className="w-4 h-4 text-blue-600" />
-                        <span><strong>REST API Layer:</strong> Clean HTTP endpoints for email operations</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Globe className="w-4 h-4 text-green-600" />
-                        <span><strong>Provider Abstraction:</strong> Unified interface for multiple email providers</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Database className="w-4 h-4 text-purple-600" />
-                        <span><strong>Data Layer:</strong> PostgreSQL for logging, Redis for caching</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Settings className="w-4 h-4 text-orange-600" />
-                        <span><strong>Configuration:</strong> Environment-based configuration management</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {activeSection === "quick-start" && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">Quick Start</h1>
-                  <p className="text-xl text-gray-600 mb-8">
-                    Get Chitthi up and running in minutes with Docker and Go.
-                  </p>
-                </div>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Prerequisites</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        <span>Docker & Docker Compose</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        <span>Go 1.24.3+ (for development)</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        <span>Git</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-2xl font-semibold mb-4 flex items-center">
-                      <span className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
-                      Clone Repository
-                    </h3>
-                    <CodeBlock
-                      id="clone"
-                      code={`git clone https://github.com/imsks/chitthi.git
-cd chitthi`}
-                    />
-                  </div>
-
-                  <div>
-                    <h3 className="text-2xl font-semibold mb-4 flex items-center">
-                      <span className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
-                      Start Infrastructure
-                    </h3>
-                    <CodeBlock
-                      id="infrastructure"
-                      code={`# Start Redis and PostgreSQL
-docker compose up redis db -d`}
-                    />
-                  </div>
-
-                  <div>
-                    <h3 className="text-2xl font-semibold mb-4 flex items-center">
-                      <span className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
-                      Run the Service
-                    </h3>
-                    <CodeBlock
-                      id="run-service"
-                      code={`# Development with hot reload
-air
-
-# Or run directly
-go run cmd/main.go`}
-                    />
-                  </div>
-
-                  <div>
-                    <h3 className="text-2xl font-semibold mb-4 flex items-center">
-                      <span className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">4</span>
-                      Test the API
-                    </h3>
-                    <CodeBlock
-                      id="test-api"
-                      code={`curl -X POST http://localhost:8080/send-email \\
-  -H "Content-Type: application/json" \\
-  -H "X-SMTP-Host: smtp.gmail.com" \\
-  -H "X-SMTP-Port: 587" \\
-  -H "X-SMTP-Username: your-email@gmail.com" \\
-  -H "X-SMTP-Password: your-app-password" \\
-  -H "X-SMTP-From: your-email@gmail.com" \\
-  -H "X-SMTP-Use-TLS: true" \\
-  -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1>"
-  }'`}
-                    />
-                  </div>
-                </div>
-
-                <Card className="bg-green-50 border-green-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-semibold text-green-900 mb-1">Success!</h4>
-                        <p className="text-green-800">
-                          Your Chitthi email service is now running on <code className="bg-green-200 px-1 rounded">http://localhost:8080</code>
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {activeSection === "api" && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">API Reference</h1>
-                  <p className="text-xl text-gray-600 mb-8">
-                    Complete reference for all Chitthi API endpoints.
-                  </p>
-                </div>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Base URL</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <code className="bg-gray-100 px-3 py-1 rounded text-sm">http://localhost:8080</code>
-                  </CardContent>
-                </Card>
-
-                <div className="space-y-8">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <Badge className="mr-3 bg-green-100 text-green-800">POST</Badge>
-                        Send Email
-                      </CardTitle>
-                      <CardDescription>
-                        Send an email via any configured provider
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h4 className="font-semibold mb-2">Endpoint</h4>
-                        <code className="bg-gray-100 px-3 py-1 rounded text-sm">POST /send-email</code>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-2">Headers</h4>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <div className="space-y-2 text-sm">
-                            <div><code>Content-Type: application/json</code></div>
-                            <div><strong>For SMTP:</strong></div>
-                            <div className="ml-4 space-y-1">
-                              <div><code>X-SMTP-Host: smtp.gmail.com</code></div>
-                              <div><code>X-SMTP-Port: 587</code></div>
-                              <div><code>X-SMTP-Username: your-email@gmail.com</code></div>
-                              <div><code>X-SMTP-Password: your-app-password</code></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-2">Request Body</h4>
-                        <CodeBlock
-                          id="send-email-body"
-                          language="json"
-                          code={`{
-  "from_email": "sender@example.com",
-  "from_name": "Sender Name",
-  "to_email": "recipient@example.com", 
-  "to_name": "Recipient Name",
-  "subject": "Email Subject",
-  "html_content": "<h1>Hello World!</h1>"
-}`}
-                        />
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-2">Response</h4>
-                        <CodeBlock
-                          id="send-email-response"
-                          language="json"
-                          code={`{
-  "status": true,
-  "message": "Email sent successfully",
-  "data": {
-    "sent_to": "recipient@example.com",
-    "sent_from": "sender@example.com", 
-    "subject": "Email Subject",
-    "provider": "smtp",
-    "log_saved": true,
-    "log_id": 123
-  }
-}`}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <Badge className="mr-3 bg-blue-100 text-blue-800">GET</Badge>
-                        Get Email Logs
-                      </CardTitle>
-                      <CardDescription>
-                        Retrieve email delivery logs
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <h4 className="font-semibold mb-2">Endpoint</h4>
-                        <code className="bg-gray-100 px-3 py-1 rounded text-sm">GET /email-logs</code>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-2">Query Parameters</h4>
-                        <div className="space-y-2">
-                          <div><code>limit</code> (optional): Number of logs to return (default: 10)</div>
-                          <div><code>offset</code> (optional): Number of logs to skip (default: 0)</div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="font-semibold mb-2">Response</h4>
-                        <CodeBlock
-                          id="email-logs-response"
-                          language="json"
-                          code={`{
-  "status": true,
-  "data": [
-    {
-      "id": 1,
-      "recipient_email": "recipient@example.com",
-      "subject": "Test Email",
-      "provider": "smtp",
-      "status": "sent",
-      "created_at": "2024-01-01T12:00:00Z"
+    const copyToClipboard = async (code: string, id: string) => {
+        try {
+            await navigator.clipboard.writeText(code)
+            setCopiedCode(id)
+            setTimeout(() => setCopiedCode(null), 2000)
+        } catch (err) {
+            console.error("Failed to copy: ", err)
+        }
     }
-  ]
-}`}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
 
-            {activeSection === "providers" && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">Email Providers</h1>
-                  <p className="text-xl text-gray-600 mb-8">
-                    Chitthi supports multiple email providers with automatic detection and fallback mechanisms.
-                  </p>
-                </div>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Supported Providers</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {[
-                        { name: "SMTP", header: "X-SMTP-*", desc: "Direct SMTP with STARTTLS" },
-                        { name: "SendGrid", header: "X-SendGrid-API-Key", desc: "SendGrid v3 API" },
-                        { name: "Breevo", header: "X-Breevo-API-Key", desc: "Breevo Email API" },
-                        { name: "MailerSend", header: "X-MailerSend-API-Key", desc: "MailerSend API" }
-                      ].map((provider, index) => (
-                        <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                          <h4 className="font-semibold text-lg mb-2">{provider.name}</h4>
-                          <div className="text-sm text-gray-600 mb-2">
-                            <strong>Header:</strong> <code className="bg-white px-2 py-1 rounded">{provider.header}</code>
-                          </div>
-                          <p className="text-gray-600">{provider.desc}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Tabs defaultValue="smtp" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="smtp">SMTP</TabsTrigger>
-                    <TabsTrigger value="sendgrid">SendGrid</TabsTrigger>
-                    <TabsTrigger value="breevo">Breevo</TabsTrigger>
-                    <TabsTrigger value="mailersend">MailerSend</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="smtp" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>SMTP Configuration</CardTitle>
-                        <CardDescription>Direct SMTP with STARTTLS support</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div>
-                            <h4 className="font-semibold mb-2">Required Headers</h4>
-                            <div className="space-y-1 text-sm">
-                              <div><code>X-SMTP-Host: smtp.gmail.com</code></div>
-                              <div><code>X-SMTP-Port: 587</code></div>
-                              <div><code>X-SMTP-Username: your-email@gmail.com</code></div>
-                              <div><code>X-SMTP-Password: your-app-password</code></div>
-                              <div><code>X-SMTP-From: your-email@gmail.com</code></div>
-                              <div><code>X-SMTP-Use-TLS: true</code></div>
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold mb-2">Example</h4>
-                            <CodeBlock
-                              id="smtp-example"
-                              code={`curl -X POST http://localhost:8080/send-email \\
-  -H "Content-Type: application/json" \\
-  -H "X-SMTP-Host: smtp.gmail.com" \\
-  -H "X-SMTP-Port: 587" \\
-  -H "X-SMTP-Username: your-email@gmail.com" \\
-  -H "X-SMTP-Password: your-app-password" \\
-  -H "X-SMTP-From: your-email@gmail.com" \\
-  -H "X-SMTP-Use-TLS: true" \\
-  -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1>"
-  }'`}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  
-                  <TabsContent value="sendgrid" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>SendGrid Configuration</CardTitle>
-                        <CardDescription>SendGrid v3 API integration</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div>
-                            <h4 className="font-semibold mb-2">Required Headers</h4>
-                            <div className="text-sm">
-                              <code>X-SendGrid-API-Key: your-sendgrid-api-key</code>
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold mb-2">Example</h4>
-                            <CodeBlock
-                              id="sendgrid-example"
-                              code={`curl -X POST http://localhost:8080/send-email \\
-  -H "Content-Type: application/json" \\
-  -H "X-SendGrid-API-Key: your-sendgrid-api-key" \\
-  -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1>"
-  }'`}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  
-                  <TabsContent value="breevo" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Breevo Configuration</CardTitle>
-                        <CardDescription>Breevo Email API integration</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div>
-                            <h4 className="font-semibold mb-2">Required Headers</h4>
-                            <div className="text-sm">
-                              <code>X-Breevo-API-Key: your-breevo-api-key</code>
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold mb-2">Example</h4>
-                            <CodeBlock
-                              id="breevo-example"
-                              code={`curl -X POST http://localhost:8080/send-email \\
-  -H "Content-Type: application/json" \\
-  -H "X-Breevo-API-Key: your-breevo-api-key" \\
-  -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1>"
-  }'`}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  
-                  <TabsContent value="mailersend" className="space-y-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>MailerSend Configuration</CardTitle>
-                        <CardDescription>MailerSend API integration</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div>
-                            <h4 className="font-semibold mb-2">Required Headers</h4>
-                            <div className="text-sm">
-                              <code>X-MailerSend-API-Key: your-mailersend-api-key</code>
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-semibold mb-2">Example</h4>
-                            <CodeBlock
-                              id="mailersend-example"
-                              code={`curl -X POST http://localhost:8080/send-email \\
-  -H "Content-Type: application/json" \\
-  -H "X-MailerSend-API-Key: your-mailersend-api-key" \\
-  -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1>"
-  }'`}
-                            />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </Tabs>
-
-                <Card className="bg-blue-50 border-blue-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start space-x-3">
-                      <Zap className="w-6 h-6 text-blue-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-semibold text-blue-900 mb-1">Provider Priority</h4>
-                        <div className="text-blue-800 space-y-1">
-                          <div>1. <strong>Header-based providers</strong> (highest priority)</div>
-                          <div>2. <strong>Request body API keys</strong> (legacy support)</div>
-                          <div>3. <strong>Environment-configured providers</strong> (fallback)</div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {activeSection === "configuration" && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">Configuration</h1>
-                  <p className="text-xl text-gray-600 mb-8">
-                    Configure Chitthi for your environment with environment variables and Docker setup.
-                  </p>
-                </div>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Environment Variables</CardTitle>
-                    <CardDescription>
-                      Create a <code>.env</code> file in the root directory
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <CodeBlock
-                      id="env-variables"
-                      language="env"
-                      code={`# Server Configuration
-PORT=8080
-
-# Database Configuration  
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable
-
-# Redis Configuration
-REDIS_URL=redis://localhost:6379
-
-# Email Provider Configuration (Optional - for fallback)
-BREEVO_API_KEY=your_breevo_api_key
-SENDGRID_API_KEY=your_sendgrid_api_key
-SENDGRID_REGION=global
-MAILERSEND_API_KEY=your_mailersend_api_key
-
-# SMTP Configuration (Optional - for fallback)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM=your-email@gmail.com
-SMTP_USE_TLS=true`}
-                    />
-                  </CardContent>
-                </Card>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <Database className="w-5 h-5 mr-2 text-blue-600" />
-                        Database Setup
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-semibold mb-2">PostgreSQL</h4>
-                          <p className="text-sm text-gray-600 mb-2">Used for email logging and analytics</p>
-                          <CodeBlock
-                            id="postgres-setup"
-                            code={`docker run -d \\
-  --name chitthi-postgres \\
-  -e POSTGRES_PASSWORD=postgres \\
-  -e POSTGRES_DB=chitthi \\
-  -p 5432:5432 \\
-  postgres:13`}
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <Zap className="w-5 h-5 mr-2 text-red-600" />
-                        Redis Setup
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-semibold mb-2">Redis Cache</h4>
-                          <p className="text-sm text-gray-600 mb-2">Used for performance optimization</p>
-                          <CodeBlock
-                            id="redis-setup"
-                            code={`docker run -d \\
-  --name chitthi-redis \\
-  -p 6379:6379 \\
-  redis:7-alpine`}
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Database Migrations</CardTitle>
-                    <CardDescription>
-                      Run database migrations to set up the required tables
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-semibold mb-2">Run Migrations</h4>
-                        <CodeBlock
-                          id="run-migrations"
-                          code={`migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up`}
-                        />
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-semibold mb-2">Rollback Migrations</h4>
-                        <CodeBlock
-                          id="rollback-migrations"
-                          code={`migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down`}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {activeSection === "deployment" && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">Deployment</h1>
-                  <p className="text-xl text-gray-600 mb-8">
-                    Deploy Chitthi to production with Docker and best practices.
-                  </p>
-                </div>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Database className="w-5 h-5 mr-2 text-blue-600" />
-                      Docker Deployment
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-semibold mb-2">Start All Services</h4>
-                        <CodeBlock
-                          id="docker-start"
-                          code={`# Start all services
-docker compose up --build
-
-# Run in background
-docker compose up -d --build
-
-# View logs
-docker compose logs -f`}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Settings className="w-5 h-5 mr-2 text-green-600" />
-                      Production Deployment
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-semibold mb-2">Build Production Image</h4>
-                        <CodeBlock
-                          id="build-production"
-                          code={`# Build production image
-docker build -t chitthi-app .
-
-# Run with environment variables
-docker run -p 8080:8080 \\
-  -e DATABASE_URL="postgres://..." \\
-  -e REDIS_URL="redis://..." \\
-  chitthi-app`}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Production Checklist</CardTitle>
-                    <CardDescription>
-                      Essential steps before deploying to production
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {[
-                        "Set APP_ENV=production",
-                        "Configure database URLs", 
-                        "Set API keys for email providers",
-                        "Set up Redis for caching",
-                        "Configure logging levels",
-                        "Set up monitoring and alerting",
-                        "Enable HTTPS/SSL",
-                        "Set up load balancing"
-                      ].map((item, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                          <span className="text-sm">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-yellow-50 border-yellow-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start space-x-3">
-                      <Settings className="w-6 h-6 text-yellow-600 mt-0.5" />
-                      <div>
-                        <h4 className="font-semibold text-yellow-900 mb-1">Production Tips</h4>
-                        <div className="text-yellow-800 space-y-1 text-sm">
-                          <div>• Use environment variables for all sensitive configuration</div>
-                          <div>• Enable connection pooling for database connections</div>
-                          <div>• Set up proper logging and monitoring</div>
-                          <div>• Use reverse proxy (nginx) for better performance</div>
-                          <div>• Implement rate limiting to prevent abuse</div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </motion.div>
+    const CodeBlock = ({
+        code,
+        language,
+        id
+    }: {
+        code: string
+        language: string
+        id: string
+    }) => (
+        <div className='relative'>
+            <div className='flex items-center justify-between p-4 bg-gray-900 border-b border-gray-700 rounded-t-lg'>
+                <span className='text-sm text-gray-400'>{language}</span>
+                <button
+                    onClick={() => copyToClipboard(code, id)}
+                    className='flex items-center gap-2 text-sm text-gray-400 hover:text-blue-500 transition-colors'>
+                    {copiedCode === id ? (
+                        <>
+                            <Check size={16} />
+                            Copied!
+                        </>
+                    ) : (
+                        <>
+                            <Copy size={16} />
+                            Copy
+                        </>
+                    )}
+                </button>
+            </div>
+            <pre className='code-block rounded-b-lg'>
+                <code>{code}</code>
+            </pre>
         </div>
-      </div>
-    </div>
-  );
+    )
+
+    return (
+        <div className='min-h-screen'>
+            {/* Navigation */}
+            <Navigation isDocs={true} />
+
+            {/* Main Layout */}
+            <div className='flex pt-16'>
+                {/* Sidebar */}
+                <div className='hidden lg:block'>
+                    <Sidebar className='fixed top-16 left-0 h-[calc(100vh-4rem)]' />
+                </div>
+
+                {/* Main Content */}
+                <div className='flex-1 lg:ml-80'>
+                    <div className='main-content'>
+                        <div className='content-wrapper'>
+                            {/* Header */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.8 }}
+                                className='mb-12'>
+                                <div className='flex items-center gap-4 mb-6'>
+                                    <Link
+                                        href='/'
+                                        className='text-gray-400 hover:text-gray-600 transition-colors'>
+                                        <ArrowLeft size={20} />
+                                    </Link>
+                                    <h1 className='text-4xl font-bold'>
+                                        Documentation
+                                    </h1>
+                                </div>
+                                <p className='text-xl text-gray-600 max-w-2xl'>
+                                    Everything you need to integrate Chitthi
+                                    into your application
+                                </p>
+                            </motion.div>
+
+                            {/* Quick Start */}
+                            <section id='getting-started' className='mb-16'>
+                                <h2 className='text-3xl font-bold mb-6'>
+                                    Getting Started
+                                </h2>
+
+                                <div id='quick-start' className='mb-8'>
+                                    <h3 className='text-2xl font-semibold mb-4'>
+                                        Quick Start
+                                    </h3>
+                                    <p className='text-gray-600 mb-6'>
+                                        Get Chitthi running in minutes with
+                                        Docker and start sending emails
+                                        immediately.
+                                    </p>
+
+                                    <div className='space-y-4'>
+                                        <div className='card'>
+                                            <h4 className='font-semibold mb-2'>
+                                                1. Clone the repository
+                                            </h4>
+                                            <CodeBlock
+                                                code='git clone https://github.com/imsks/chitthi.git\ncd chitthi'
+                                                language='bash'
+                                                id='clone-repo'
+                                            />
+                                        </div>
+
+                                        <div className='card'>
+                                            <h4 className='font-semibold mb-2'>
+                                                2. Start infrastructure
+                                            </h4>
+                                            <CodeBlock
+                                                code='docker compose up redis db -d'
+                                                language='bash'
+                                                id='start-infra'
+                                            />
+                                        </div>
+
+                                        <div className='card'>
+                                            <h4 className='font-semibold mb-2'>
+                                                3. Run the service
+                                            </h4>
+                                            <CodeBlock
+                                                code='air\n# or\ngo run cmd/main.go'
+                                                language='bash'
+                                                id='run-service'
+                                            />
+                                        </div>
+
+                                        <div className='card'>
+                                            <h4 className='font-semibold mb-2'>
+                                                4. Test the API
+                                            </h4>
+                                            <CodeBlock
+                                                code={`curl -X POST http://localhost:8080/send-email \\\n  -H "Content-Type: application/json" \\\n  -H "X-SMTP-Host: smtp.gmail.com" \\\n  -H "X-SMTP-Port: 587" \\\n  -H "X-SMTP-Username: your-email@gmail.com" \\\n  -H "X-SMTP-Password: your-app-password" \\\n  -H "X-SMTP-From: your-email@gmail.com" \\\n  -H "X-SMTP-Use-TLS: true" \\\n  -d '{ \\\n    "from_email": "sender@example.com", \\\n    "to_email": "recipient@example.com", \\\n    "subject": "Test Email", \\\n    "html_content": "<h1>Hello World!</h1>" \\\n  }'`}
+                                                language='bash'
+                                                id='test-api'
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* API Reference */}
+                            <section id='api-reference' className='mb-16'>
+                                <h2 className='text-3xl font-bold mb-6'>
+                                    API Reference
+                                </h2>
+
+                                <div id='send-email' className='mb-8'>
+                                    <h3 className='text-2xl font-semibold mb-4'>
+                                        Send Email
+                                    </h3>
+                                    <p className='text-gray-600 mb-4'>
+                                        Send emails through any supported
+                                        provider using a single endpoint.
+                                    </p>
+
+                                    <div className='card mb-6'>
+                                        <h4 className='font-semibold mb-2'>
+                                            Endpoint
+                                        </h4>
+                                        <CodeBlock
+                                            code='POST /send-email'
+                                            language='http'
+                                            id='endpoint'
+                                        />
+                                    </div>
+
+                                    <div className='card mb-6'>
+                                        <h4 className='font-semibold mb-2'>
+                                            Headers
+                                        </h4>
+                                        <CodeBlock
+                                            code={`Content-Type: application/json\nX-SMTP-Host: smtp.gmail.com\nX-SMTP-Port: 587\nX-SMTP-Username: your-email@gmail.com\nX-SMTP-Password: your-app-password\nX-SMTP-From: your-email@gmail.com\nX-SMTP-Use-TLS: true`}
+                                            language='http'
+                                            id='headers'
+                                        />
+                                    </div>
+
+                                    <div className='card mb-6'>
+                                        <h4 className='font-semibold mb-2'>
+                                            Request Body
+                                        </h4>
+                                        <CodeBlock
+                                            code={`{\n  "from_email": "sender@example.com",\n  "from_name": "Sender Name",\n  "to_email": "recipient@example.com",\n  "to_name": "Recipient Name",\n  "subject": "Email Subject",\n  "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>"\n}`}
+                                            language='json'
+                                            id='request-body'
+                                        />
+                                    </div>
+
+                                    <div className='card'>
+                                        <h4 className='font-semibold mb-2'>
+                                            Response
+                                        </h4>
+                                        <CodeBlock
+                                            code={`{\n  "status": true,\n  "message": "Email sent successfully",\n  "data": {\n    "sent_to": "recipient@example.com",\n    "sent_from": "sender@example.com",\n    "subject": "Email Subject",\n    "provider": "smtp",\n    "log_saved": true,\n    "log_id": 123\n  }\n}`}
+                                            language='json'
+                                            id='response'
+                                        />
+                                    </div>
+                                </div>
+
+                                <div id='email-logs' className='mb-8'>
+                                    <h3 className='text-2xl font-semibold mb-4'>
+                                        Get Email Logs
+                                    </h3>
+                                    <p className='text-gray-600 mb-4'>
+                                        Retrieve email logs for monitoring and
+                                        analytics.
+                                    </p>
+
+                                    <div className='card mb-6'>
+                                        <h4 className='font-semibold mb-2'>
+                                            Endpoint
+                                        </h4>
+                                        <CodeBlock
+                                            code='GET /email-logs?limit=10&offset=0'
+                                            language='http'
+                                            id='logs-endpoint'
+                                        />
+                                    </div>
+
+                                    <div className='card'>
+                                        <h4 className='font-semibold mb-2'>
+                                            Response
+                                        </h4>
+                                        <CodeBlock
+                                            code={`{\n  "status": true,\n  "data": [\n    {\n      "id": 1,\n      "recipient_email": "recipient@example.com",\n      "subject": "Test Email",\n      "provider": "smtp",\n      "status": "sent",\n      "created_at": "2024-01-01T12:00:00Z"\n    }\n  ]\n}`}
+                                            language='json'
+                                            id='logs-response'
+                                        />
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Email Providers */}
+                            <section id='email-providers' className='mb-16'>
+                                <h2 className='text-3xl font-bold mb-6'>
+                                    Email Providers
+                                </h2>
+
+                                <div id='smtp' className='mb-8'>
+                                    <h3 className='text-2xl font-semibold mb-4'>
+                                        SMTP
+                                    </h3>
+                                    <p className='text-gray-600 mb-4'>
+                                        Direct SMTP connection with STARTTLS
+                                        support.
+                                    </p>
+                                    <CodeBlock
+                                        code={`curl -X POST http://localhost:8080/send-email \\\n  -H "Content-Type: application/json" \\\n  -H "X-SMTP-Host: smtp.gmail.com" \\\n  -H "X-SMTP-Port: 587" \\\n  -H "X-SMTP-Username: your-email@gmail.com" \\\n  -H "X-SMTP-Password: your-app-password" \\\n  -H "X-SMTP-From: your-email@gmail.com" \\\n  -H "X-SMTP-Use-TLS: true" \\\n  -d '{ \\\n    "from_email": "sender@example.com", \\\n    "to_email": "recipient@example.com", \\\n    "subject": "Test Email", \\\n    "html_content": "<h1>Hello World!</h1>" \\\n  }'`}
+                                        language='bash'
+                                        id='smtp-example'
+                                    />
+                                </div>
+
+                                <div id='sendgrid' className='mb-8'>
+                                    <h3 className='text-2xl font-semibold mb-4'>
+                                        SendGrid
+                                    </h3>
+                                    <p className='text-gray-600 mb-4'>
+                                        SendGrid v3 API integration.
+                                    </p>
+                                    <CodeBlock
+                                        code={`curl -X POST http://localhost:8080/send-email \\\n  -H "Content-Type: application/json" \\\n  -H "X-SendGrid-API-Key: your-sendgrid-api-key" \\\n  -d '{ \\\n    "from_email": "sender@example.com", \\\n    "to_email": "recipient@example.com", \\\n    "subject": "Test Email", \\\n    "html_content": "<h1>Hello World!</h1>" \\\n  }'`}
+                                        language='bash'
+                                        id='sendgrid-example'
+                                    />
+                                </div>
+
+                                <div id='breevo' className='mb-8'>
+                                    <h3 className='text-2xl font-semibold mb-4'>
+                                        Breevo
+                                    </h3>
+                                    <p className='text-gray-600 mb-4'>
+                                        Breevo Email API integration.
+                                    </p>
+                                    <CodeBlock
+                                        code={`curl -X POST http://localhost:8080/send-email \\\n  -H "Content-Type: application/json" \\\n  -H "X-Breevo-API-Key: your-breevo-api-key" \\\n  -d '{ \\\n    "from_email": "sender@example.com", \\\n    "to_email": "recipient@example.com", \\\n    "subject": "Test Email", \\\n    "html_content": "<h1>Hello World!</h1>" \\\n  }'`}
+                                        language='bash'
+                                        id='breevo-example'
+                                    />
+                                </div>
+
+                                <div id='mailersend' className='mb-8'>
+                                    <h3 className='text-2xl font-semibold mb-4'>
+                                        MailerSend
+                                    </h3>
+                                    <p className='text-gray-600 mb-4'>
+                                        MailerSend API integration.
+                                    </p>
+                                    <CodeBlock
+                                        code={`curl -X POST http://localhost:8080/send-email \\\n  -H "Content-Type: application/json" \\\n  -H "X-MailerSend-API-Key: your-mailersend-api-key" \\\n  -d '{ \\\n    "from_email": "sender@example.com", \\\n    "to_email": "recipient@example.com", \\\n    "subject": "Test Email", \\\n    "html_content": "<h1>Hello World!</h1>" \\\n  }'`}
+                                        language='bash'
+                                        id='mailersend-example'
+                                    />
+                                </div>
+                            </section>
+
+                            {/* Configuration */}
+                            <section id='configuration' className='mb-16'>
+                                <h2 className='text-3xl font-bold mb-6'>
+                                    Configuration
+                                </h2>
+
+                                <div id='env-vars' className='mb-8'>
+                                    <h3 className='text-2xl font-semibold mb-4'>
+                                        Environment Variables
+                                    </h3>
+                                    <p className='text-gray-600 mb-4'>
+                                        Configure Chitthi using environment
+                                        variables.
+                                    </p>
+                                    <CodeBlock
+                                        code={`# Server Configuration\nPORT=8080\n\n# Database Configuration\nDATABASE_URL=postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable\n\n# Redis Configuration\nREDIS_URL=redis://localhost:6379\n\n# Email Provider Configuration (Optional - for fallback)\nBREEVO_API_KEY=your_breevo_api_key\nSENDGRID_API_KEY=your_sendgrid_api_key\nSENDGRID_REGION=global\nMAILERSEND_API_KEY=your_mailersend_api_key\n\n# SMTP Configuration (Optional - for fallback)\nSMTP_HOST=smtp.gmail.com\nSMTP_PORT=587\nSMTP_USERNAME=your-email@gmail.com\nSMTP_PASSWORD=your-app-password\nSMTP_FROM=your-email@gmail.com\nSMTP_USE_TLS=true`}
+                                        language='env'
+                                        id='env-vars-example'
+                                    />
+                                </div>
+                            </section>
+
+                            {/* Contributing */}
+                            <section id='contributing' className='mb-16'>
+                                <h2 className='text-3xl font-bold mb-6'>
+                                    Contributing
+                                </h2>
+                                <p className='text-gray-600 mb-6'>
+                                    We welcome contributions! Please follow
+                                    these steps to contribute to Chitthi.
+                                </p>
+
+                                <div className='space-y-4'>
+                                    <div className='card'>
+                                        <h4 className='font-semibold mb-2'>
+                                            1. Fork the repository
+                                        </h4>
+                                        <CodeBlock
+                                            code='git clone https://github.com/imsks/chitthi.git\ncd chitthi'
+                                            language='bash'
+                                            id='fork-repo'
+                                        />
+                                    </div>
+
+                                    <div className='card'>
+                                        <h4 className='font-semibold mb-2'>
+                                            2. Create a feature branch
+                                        </h4>
+                                        <CodeBlock
+                                            code='git checkout -b feature/your-feature-name'
+                                            language='bash'
+                                            id='create-branch'
+                                        />
+                                    </div>
+
+                                    <div className='card'>
+                                        <h4 className='font-semibold mb-2'>
+                                            3. Make your changes
+                                        </h4>
+                                        <p className='text-gray-600 mb-2'>
+                                            Follow the existing code style, add
+                                            tests for new functionality, and
+                                            update documentation as needed.
+                                        </p>
+                                    </div>
+
+                                    <div className='card'>
+                                        <h4 className='font-semibold mb-2'>
+                                            4. Test your changes
+                                        </h4>
+                                        <CodeBlock
+                                            code='go test ./...'
+                                            language='bash'
+                                            id='run-tests'
+                                        />
+                                    </div>
+
+                                    <div className='card'>
+                                        <h4 className='font-semibold mb-2'>
+                                            5. Submit a pull request
+                                        </h4>
+                                        <p className='text-gray-600 mb-2'>
+                                            Provide a clear description of your
+                                            changes, include any relevant issue
+                                            numbers, and ensure all tests pass.
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Table of Contents */}
+                <div className='hidden xl:block'>
+                    <TableOfContents className='fixed top-16 right-0 h-[calc(100vh-4rem)]' />
+                </div>
+            </div>
+
+            {/* Footer */}
+            <footer className='footer'>
+                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+                    <div className='flex flex-col md:flex-row justify-between items-center'>
+                        <div className='mb-4 md:mb-0'>
+                            <p className='text-gray-600'>
+                                Made with ❤️ by{" "}
+                                <span className='text-blue-600'>Sachin</span> in
+                                🇮🇳
+                            </p>
+                        </div>
+                        <div className='flex items-center space-x-6'>
+                            <Link
+                                href='https://github.com/imsks'
+                                className='nav-link'>
+                                @imsks
+                            </Link>
+                            <Link
+                                href='https://github.com/imsks/chitthi'
+                                className='nav-link'>
+                                <Github size={20} />
+                            </Link>
+                            <Link href='/' className='nav-link'>
+                                Home
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    )
 }
