@@ -11,45 +11,30 @@ import {
     ExternalLink
 } from "lucide-react"
 import Link from "next/link"
-import MatrixRain from "@/components/MatrixRain"
 import Navigation from "@/components/Navigation"
 
 export default function Home() {
     return (
         <div className='min-h-screen'>
-            {/* Matrix Background Effect */}
-            <div className='matrix-bg'>
-                <MatrixRain />
-            </div>
-
             {/* Navigation */}
             <Navigation />
 
             {/* Hero Section */}
-            <section className='pt-32 pb-20 px-4 sm:px-6 lg:px-8'>
-                <div className='max-w-7xl mx-auto text-center'>
+            <section className='hero'>
+                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8 }}>
+                        transition={{ duration: 0.8 }}
+                        className='text-center'>
                         <h1 className='text-4xl md:text-6xl lg:text-7xl font-bold mb-6'>
-                            <span className='terminal-text'>
-                                Sending emails
-                            </span>
-                            <br />
-                            <span className='text-white'>
-                                shouldn&apos;t be a pain
-                            </span>
+                            Sending emails shouldn&apos;t be a pain
                         </h1>
 
-                        <p className='text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto'>
+                        <p className='text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90'>
                             A BYOK (Bring Your Own Key) email microservice with
-                            multi-provider support.
-                            <span className='text-green-400 font-mono'>
-                                {" "}
-                                Plug and play
-                            </span>{" "}
-                            simplicity for developers.
+                            multi-provider support. Plug and play simplicity for
+                            developers.
                         </p>
 
                         <div className='flex flex-col sm:flex-row gap-4 justify-center items-center'>
@@ -57,8 +42,8 @@ export default function Home() {
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className='btn-primary flex items-center gap-2'>
-                                    Explore Documentation
+                                    className='btn-primary'>
+                                    Get Started
                                     <ArrowRight size={20} />
                                 </motion.button>
                             </Link>
@@ -67,7 +52,7 @@ export default function Home() {
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className='btn-secondary flex items-center gap-2'>
+                                    className='btn-secondary'>
                                     <Github size={20} />
                                     View on GitHub
                                 </motion.button>
@@ -87,15 +72,15 @@ export default function Home() {
                         viewport={{ once: true }}
                         className='text-center mb-16'>
                         <h2 className='text-3xl md:text-4xl font-bold mb-4'>
-                            <span className='terminal-text'>Why Chitthi?</span>
+                            Why Chitthi?
                         </h2>
-                        <p className='text-xl text-gray-300 max-w-2xl mx-auto'>
+                        <p className='text-xl text-gray-600 max-w-2xl mx-auto'>
                             Built for developers who want simplicity without
                             sacrificing power
                         </p>
                     </motion.div>
 
-                    <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-8'>
+                    <div className='features-grid'>
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
@@ -103,14 +88,14 @@ export default function Home() {
                             viewport={{ once: true }}
                             className='card'>
                             <div className='flex items-center mb-4'>
-                                <div className='p-3 bg-green-500/20 rounded-lg mr-4'>
-                                    <Zap className='text-green-400' size={24} />
+                                <div className='p-3 bg-blue-100 rounded-lg mr-4'>
+                                    <Zap className='text-blue-600' size={24} />
                                 </div>
-                                <h3 className='text-xl font-bold text-white'>
+                                <h3 className='text-xl font-bold'>
                                     Multi-Provider
                                 </h3>
                             </div>
-                            <p className='text-gray-300'>
+                            <p className='text-gray-600'>
                                 Support for Breevo, SendGrid, MailerSend, and
                                 SMTP. Switch providers seamlessly with
                                 header-based credentials.
@@ -124,17 +109,17 @@ export default function Home() {
                             viewport={{ once: true }}
                             className='card'>
                             <div className='flex items-center mb-4'>
-                                <div className='p-3 bg-blue-500/20 rounded-lg mr-4'>
+                                <div className='p-3 bg-green-100 rounded-lg mr-4'>
                                     <Shield
-                                        className='text-blue-400'
+                                        className='text-green-600'
                                         size={24}
                                     />
                                 </div>
-                                <h3 className='text-xl font-bold text-white'>
+                                <h3 className='text-xl font-bold'>
                                     BYOK Security
                                 </h3>
                             </div>
-                            <p className='text-gray-300'>
+                            <p className='text-gray-600'>
                                 Bring Your Own Key approach ensures your API
                                 keys stay secure. No vendor lock-in, complete
                                 control.
@@ -148,17 +133,17 @@ export default function Home() {
                             viewport={{ once: true }}
                             className='card'>
                             <div className='flex items-center mb-4'>
-                                <div className='p-3 bg-purple-500/20 rounded-lg mr-4'>
+                                <div className='p-3 bg-purple-100 rounded-lg mr-4'>
                                     <Code
-                                        className='text-purple-400'
+                                        className='text-purple-600'
                                         size={24}
                                     />
                                 </div>
-                                <h3 className='text-xl font-bold text-white'>
+                                <h3 className='text-xl font-bold'>
                                     Production Ready
                                 </h3>
                             </div>
-                            <p className='text-gray-300'>
+                            <p className='text-gray-600'>
                                 Built in Go with Redis caching, PostgreSQL
                                 logging, and comprehensive error handling. Ready
                                 for scale.
@@ -172,14 +157,14 @@ export default function Home() {
                             viewport={{ once: true }}
                             className='card'>
                             <div className='flex items-center mb-4'>
-                                <div className='p-3 bg-cyan-500/20 rounded-lg mr-4'>
-                                    <Mail className='text-cyan-400' size={24} />
+                                <div className='p-3 bg-cyan-100 rounded-lg mr-4'>
+                                    <Mail className='text-cyan-600' size={24} />
                                 </div>
-                                <h3 className='text-xl font-bold text-white'>
+                                <h3 className='text-xl font-bold'>
                                     Smart Routing
                                 </h3>
                             </div>
-                            <p className='text-gray-300'>
+                            <p className='text-gray-600'>
                                 Automatic provider detection based on
                                 credentials. Intelligent fallback and load
                                 balancing.
@@ -193,17 +178,17 @@ export default function Home() {
                             viewport={{ once: true }}
                             className='card'>
                             <div className='flex items-center mb-4'>
-                                <div className='p-3 bg-yellow-500/20 rounded-lg mr-4'>
+                                <div className='p-3 bg-yellow-100 rounded-lg mr-4'>
                                     <ExternalLink
-                                        className='text-yellow-400'
+                                        className='text-yellow-600'
                                         size={24}
                                     />
                                 </div>
-                                <h3 className='text-xl font-bold text-white'>
+                                <h3 className='text-xl font-bold'>
                                     Docker Ready
                                 </h3>
                             </div>
-                            <p className='text-gray-300'>
+                            <p className='text-gray-600'>
                                 Containerized deployment with Docker Compose.
                                 Easy setup and deployment to any environment.
                             </p>
@@ -216,14 +201,14 @@ export default function Home() {
                             viewport={{ once: true }}
                             className='card'>
                             <div className='flex items-center mb-4'>
-                                <div className='p-3 bg-red-500/20 rounded-lg mr-4'>
-                                    <Code className='text-red-400' size={24} />
+                                <div className='p-3 bg-red-100 rounded-lg mr-4'>
+                                    <Code className='text-red-600' size={24} />
                                 </div>
-                                <h3 className='text-xl font-bold text-white'>
+                                <h3 className='text-xl font-bold'>
                                     Simple API
                                 </h3>
                             </div>
-                            <p className='text-gray-300'>
+                            <p className='text-gray-600'>
                                 Clean REST API with comprehensive documentation.
                                 Get started in minutes, not hours.
                             </p>
@@ -233,7 +218,7 @@ export default function Home() {
             </section>
 
             {/* CTA Section */}
-            <section className='py-20 px-4 sm:px-6 lg:px-8'>
+            <section className='py-20 px-4 sm:px-6 lg:px-8 bg-gray-50'>
                 <div className='max-w-4xl mx-auto text-center'>
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -241,11 +226,9 @@ export default function Home() {
                         transition={{ duration: 0.8 }}
                         viewport={{ once: true }}>
                         <h2 className='text-3xl md:text-4xl font-bold mb-6'>
-                            <span className='terminal-text'>
-                                Ready to simplify your email infrastructure?
-                            </span>
+                            Ready to simplify your email infrastructure?
                         </h2>
-                        <p className='text-xl text-gray-300 mb-8'>
+                        <p className='text-xl text-gray-600 mb-8'>
                             Join developers who&apos;ve already made the switch
                             to Chitthi
                         </p>
@@ -254,7 +237,7 @@ export default function Home() {
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className='btn-primary flex items-center gap-2'>
+                                    className='btn-primary'>
                                     Get Started
                                     <ArrowRight size={20} />
                                 </motion.button>
@@ -263,7 +246,7 @@ export default function Home() {
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    className='btn-secondary flex items-center gap-2'>
+                                    className='btn-secondary'>
                                     <Github size={20} />
                                     Star on GitHub
                                 </motion.button>
@@ -274,14 +257,14 @@ export default function Home() {
             </section>
 
             {/* Footer */}
-            <footer className='footer py-8 px-4 sm:px-6 lg:px-8'>
-                <div className='max-w-7xl mx-auto'>
+            <footer className='footer'>
+                <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
                     <div className='flex flex-col md:flex-row justify-between items-center'>
                         <div className='mb-4 md:mb-0'>
-                            <p className='text-gray-400'>
+                            <p className='text-gray-600'>
                                 Made with ❤️ by{" "}
-                                <span className='text-green-400'>Sachin</span>{" "}
-                                in 🇮🇳
+                                <span className='text-blue-600'>Sachin</span> in
+                                🇮🇳
                             </p>
                         </div>
                         <div className='flex items-center space-x-6'>

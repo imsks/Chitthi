@@ -40,23 +40,18 @@ export default function Navigation({ isDocs = false }: NavigationProps) {
     ]
 
     return (
-        <nav
-            className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-                isScrolled
-                    ? "bg-black/90 backdrop-blur-md border-b border-gray-800"
-                    : "bg-black/20 backdrop-blur-md"
-            }`}>
+        <nav className={`nav-container ${isScrolled ? "shadow-sm" : ""}`}>
             <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
                 <div className='flex justify-between items-center h-16'>
                     {/* Logo */}
                     <div className='flex items-center'>
                         <Link href='/' className='flex items-center space-x-2'>
-                            <div className='w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center'>
-                                <span className='text-black font-bold text-sm'>
+                            <div className='w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center'>
+                                <span className='text-white font-bold text-sm'>
                                     C
                                 </span>
                             </div>
-                            <span className='terminal-text text-xl font-bold'>
+                            <span className='text-xl font-bold text-gray-900'>
                                 chitthi
                             </span>
                         </Link>
@@ -68,7 +63,7 @@ export default function Navigation({ isDocs = false }: NavigationProps) {
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className='nav-link flex items-center gap-2 text-sm font-medium transition-colors'>
+                                className='nav-link flex items-center gap-2'>
                                 <item.icon size={16} />
                                 {item.name}
                             </Link>
@@ -83,7 +78,7 @@ export default function Navigation({ isDocs = false }: NavigationProps) {
                             <input
                                 type='text'
                                 placeholder='Search docs...'
-                                className='bg-gray-800/50 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-64'
+                                className='search-input pl-10 pr-4 w-64'
                             />
                         </div>
 
@@ -100,7 +95,7 @@ export default function Navigation({ isDocs = false }: NavigationProps) {
                     <div className='md:hidden'>
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className='text-gray-300 hover:text-white transition-colors'>
+                            className='text-gray-600 hover:text-gray-900 transition-colors'>
                             {isOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
                     </div>
@@ -114,13 +109,13 @@ export default function Navigation({ isDocs = false }: NavigationProps) {
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.2 }}
-                            className='md:hidden border-t border-gray-800'>
+                            className='md:hidden border-t border-gray-200'>
                             <div className='py-4 space-y-4'>
                                 {navItems.map((item) => (
                                     <Link
                                         key={item.name}
                                         href={item.href}
-                                        className='nav-link flex items-center gap-3 px-4 py-2 text-sm font-medium'
+                                        className='nav-link flex items-center gap-3 px-4 py-2'
                                         onClick={() => setIsOpen(false)}>
                                         <item.icon size={16} />
                                         {item.name}
@@ -137,7 +132,7 @@ export default function Navigation({ isDocs = false }: NavigationProps) {
                                         <input
                                             type='text'
                                             placeholder='Search docs...'
-                                            className='bg-gray-800/50 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full'
+                                            className='search-input pl-10 pr-4 w-full'
                                         />
                                     </div>
                                 </div>
@@ -145,7 +140,7 @@ export default function Navigation({ isDocs = false }: NavigationProps) {
                                 {/* Mobile GitHub */}
                                 <Link
                                     href='https://github.com/imsks/chitthi'
-                                    className='nav-link flex items-center gap-3 px-4 py-2 text-sm font-medium'
+                                    className='nav-link flex items-center gap-3 px-4 py-2'
                                     onClick={() => setIsOpen(false)}>
                                     <Github size={16} />
                                     GitHub

@@ -120,10 +120,8 @@ export default function Sidebar({ className = "" }: SidebarProps) {
                 <div className='flex items-center justify-between'>
                     <Link
                         href={item.href}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                            level === 0
-                                ? "font-medium text-gray-200 hover:text-white hover:bg-gray-800"
-                                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                        className={`sidebar-item ${
+                            level === 0 ? "font-medium" : ""
                         }`}>
                         {item.icon && <item.icon size={16} />}
                         <span>{item.title}</span>
@@ -131,7 +129,7 @@ export default function Sidebar({ className = "" }: SidebarProps) {
                     {hasChildren && (
                         <button
                             onClick={() => toggleItem(item.title)}
-                            className='p-1 hover:bg-gray-800 rounded transition-colors'>
+                            className='p-1 hover:bg-gray-100 rounded transition-colors'>
                             {isExpanded ? (
                                 <ChevronDown size={16} />
                             ) : (
@@ -162,8 +160,7 @@ export default function Sidebar({ className = "" }: SidebarProps) {
     }
 
     return (
-        <div
-            className={`w-80 bg-gray-900/50 border-r border-gray-800 h-full overflow-y-auto ${className}`}>
+        <div className={`sidebar ${className}`}>
             <div className='p-4 space-y-6'>
                 {/* Search */}
                 <div className='relative'>
@@ -176,7 +173,7 @@ export default function Sidebar({ className = "" }: SidebarProps) {
                         placeholder='Search documentation...'
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className='bg-gray-800/50 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent w-full'
+                        className='search-input pl-10 pr-4 w-full'
                     />
                 </div>
 
@@ -188,21 +185,19 @@ export default function Sidebar({ className = "" }: SidebarProps) {
                 </nav>
 
                 {/* Quick Links */}
-                <div className='pt-6 border-t border-gray-800'>
-                    <h3 className='text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3'>
-                        Quick Links
-                    </h3>
+                <div className='pt-6 border-t border-gray-200'>
+                    <h3 className='sidebar-title'>Quick Links</h3>
                     <div className='space-y-2'>
                         <Link
                             href='https://github.com/imsks/chitthi'
-                            className='flex items-center gap-2 text-sm text-gray-400 hover:text-gray-200 transition-colors'>
+                            className='sidebar-item'>
                             <Github size={16} />
                             GitHub Repository
                             <ExternalLink size={12} />
                         </Link>
                         <Link
                             href='https://github.com/imsks/chitthi/issues'
-                            className='flex items-center gap-2 text-sm text-gray-400 hover:text-gray-200 transition-colors'>
+                            className='sidebar-item'>
                             <BookOpen size={16} />
                             Report Issues
                             <ExternalLink size={12} />

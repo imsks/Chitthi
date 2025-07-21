@@ -62,31 +62,24 @@ export default function TableOfContents({
     if (headings.length === 0) return null
 
     return (
-        <div
-            className={`w-64 bg-gray-900/50 border-l border-gray-800 h-full overflow-y-auto ${className}`}>
-            <div className='p-4'>
-                <h3 className='text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4'>
-                    On this page
-                </h3>
-                <nav className='space-y-1'>
-                    {headings.map((heading) => (
-                        <button
-                            key={heading.id}
-                            onClick={() => scrollToHeading(heading.id)}
-                            className={`flex items-center gap-2 w-full text-left px-2 py-1 rounded text-sm transition-colors ${
-                                activeId === heading.id
-                                    ? "text-green-400 bg-green-400/10"
-                                    : "text-gray-400 hover:text-gray-200"
-                            }`}
-                            style={{
-                                paddingLeft: `${(heading.level - 1) * 12 + 8}px`
-                            }}>
-                            <Hash size={12} />
-                            {heading.title}
-                        </button>
-                    ))}
-                </nav>
-            </div>
+        <div className={`toc ${className}`}>
+            <h3 className='toc-title'>On this page</h3>
+            <nav className='space-y-1'>
+                {headings.map((heading) => (
+                    <button
+                        key={heading.id}
+                        onClick={() => scrollToHeading(heading.id)}
+                        className={`toc-item ${
+                            activeId === heading.id ? "active" : ""
+                        }`}
+                        style={{
+                            paddingLeft: `${(heading.level - 1) * 12 + 8}px`
+                        }}>
+                        <Hash size={12} />
+                        {heading.title}
+                    </button>
+                ))}
+            </nav>
         </div>
     )
 }
