@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"github.com/imsks/chitthi/internal/utils"
 )
 
 type Handler struct {
@@ -16,18 +18,18 @@ func NewHandler(service *Service) *Handler {
 
 func (h *Handler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		utils.SendEmailErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed", "METHOD_NOT_ALLOWED")
 		return
 	}
 
 	var req EmailRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "Invalid JSON", "INVALID_JSON")
 		return
 	}
 
 	if req.ToEmail == "" || req.Subject == "" {
-		http.Error(w, "Missing required fields: to_email and subject", http.StatusBadRequest)
+		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "Missing required fields: to_email and subject", "MISSING_REQUIRED_FIELDS")
 		return
 	}
 
@@ -37,13 +39,17 @@ func (h *Handler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	// Add credentials to the request
 	req.Credentials = credentials
 
-	if err := h.service.SendEmail(r.Context(), &req); err != nil {
-		http.Error(w, "Failed to send email: "+err.Error(), http.StatusInternalServerError)
+	// Send email and get result
+	result := h.service.SendEmail(r.Context(), &req)
+
+	if !result.Success {
+		// Email sending failed
+		utils.SendEmailErrorResponse(w, http.StatusInternalServerError, "Failed to send email: "+result.Error.Error(), "EMAIL_SEND_FAILED")
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
-	w.Write([]byte("Email sent successfully"))
+	// Email sent successfully, return structured response
+	utils.SendEmailSuccessResponse(w, result.EmailData)
 }
 
 // extractCredentialsFromHeaders extracts all credential headers
@@ -86,7 +92,7 @@ func extractCredentialsFromHeaders(r *http.Request) map[string]string {
 
 func (h *Handler) GetLogs(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		utils.SendLogsErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed", "METHOD_NOT_ALLOWED")
 		return
 	}
 
@@ -99,10 +105,9 @@ func (h *Handler) GetLogs(w http.ResponseWriter, r *http.Request) {
 
 	logs, err := h.service.GetLogs(r.Context(), limit)
 	if err != nil {
-		http.Error(w, "Failed to fetch logs", http.StatusInternalServerError)
+		utils.SendLogsErrorResponse(w, http.StatusInternalServerError, "Failed to fetch logs: "+err.Error(), "LOGS_FETCH_FAILED")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(logs)
+	utils.SendLogsSuccessResponse(w, logs)
 }
