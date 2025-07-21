@@ -1,14 +1,17 @@
-# 📬 Chitthi — Email Sending Microservice (Beta)
+# 📬 Chitthi — Email Sending Microservice
 
 Chitthi is a lightweight email-sending microservice built in Go.  
-It supports multiple third-party providers like Breevo, SendGrid, and MailerSend with features like BYOK (Bring Your Own Key), request logging, Redis caching, and more.
+It supports multiple third-party providers like Breevo, SendGrid, MailerSend, and SMTP with features like BYOK (Bring Your Own Key), header-based credentials, request logging, Redis caching, and more.
 
 ---
 
-## ✅ Features (Beta)
+## ✅ Features
 
--   Send HTML emails via multiple providers (Breevo, SendGrid, MailerSend)
+-   Send HTML emails via multiple providers (Breevo, SendGrid, MailerSend, SMTP)
 -   **BYOK (Bring Your Own Key)** - Users can pass their own API keys
+-   **Header-based Credentials** - Secure credential management via HTTP headers
+-   **SMTP Support** - Direct SMTP integration with STARTTLS support
+-   **Provider Selection** - Choose specific email providers
 -   Fallback to configured API keys when user keys not provided
 -   Cache usage in Redis
 -   Log send events in Postgres
@@ -18,7 +21,31 @@ It supports multiple third-party providers like Breevo, SendGrid, and MailerSend
 
 ## 🚀 API Usage
 
-### User-Provided API Keys (Recommended)
+### Method 1: Header-based Credentials (Recommended)
+
+Users can pass their credentials securely via HTTP headers:
+
+```bash
+curl -X POST http://localhost:8080/send-email \
+  -H "Content-Type: application/json" \
+  -H "X-SMTP-Host: smtp.gmail.com" \
+  -H "X-SMTP-Port: 587" \
+  -H "X-SMTP-Username: your-email@gmail.com" \
+  -H "X-SMTP-Password: your-app-password" \
+  -H "X-SMTP-From: your-email@gmail.com" \
+  -H "X-SMTP-Use-TLS: true" \
+  -d '{
+    "from_email": "sender@example.com",
+    "from_name": "Sender Name",
+    "to_email": "recipient@example.com",
+    "to_name": "Recipient Name",
+    "subject": "Test Email",
+    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>",
+    "provider": "smtp"
+  }'
+```
+
+### Method 2: API Keys in Request Body (Legacy)
 
 Users can pass their own API keys in the request body:
 
@@ -38,23 +65,58 @@ curl -X POST http://localhost:8080/send-email \
 
 ### Supported Providers
 
-1. **Breevo** - Use `breevo_api_key` in request
-2. **SendGrid** - Use `sendgrid_api_key` in request
-3. **MailerSend** - Use `mailersend_api_key` in request
+1. **SMTP** - Use SMTP headers or configure in environment
+2. **Breevo** - Use `X-Breevo-API-Key` header or `breevo_api_key` in request
+3. **SendGrid** - Use `X-SendGrid-API-Key` header or `sendgrid_api_key` in request
+4. **MailerSend** - Use `X-MailerSend-API-Key` header or `mailersend_api_key` in request
 
-### API Key Priority
+### Available Header Credentials
 
-When multiple API keys are provided, the system uses this priority order:
+#### API Keys
 
-1. `breevo_api_key` (highest priority)
-2. `sendgrid_api_key`
-3. `mailersend_api_key` (lowest priority)
+-   `X-Breevo-API-Key`: Breevo API key
+-   `X-SendGrid-API-Key`: SendGrid API key
+-   `X-MailerSend-API-Key`: MailerSend API key
 
-Only the first valid API key will be used.
+#### SMTP Credentials
+
+-   `X-SMTP-Host`: SMTP server hostname
+-   `X-SMTP-Port`: SMTP port (default: 587)
+-   `X-SMTP-Username`: SMTP username
+-   `X-SMTP-Password`: SMTP password
+-   `X-SMTP-From`: From email address
+-   `X-SMTP-Use-TLS`: Use TLS (true/false, default: true)
+
+### Provider Selection
+
+You can specify which provider to use by adding the `provider` field:
+
+```bash
+curl -X POST http://localhost:8080/send-email \
+  -H "Content-Type: application/json" \
+  -H "X-SMTP-Host: smtp.gmail.com" \
+  -H "X-SMTP-Username: your-email@gmail.com" \
+  -H "X-SMTP-Password: your-app-password" \
+  -d '{
+    "from_email": "sender@example.com",
+    "to_email": "recipient@example.com",
+    "subject": "Test Email",
+    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>",
+    "provider": "smtp"
+  }'
+```
+
+### Priority Order
+
+When multiple providers are available, the system uses this priority order:
+
+1. **Header-based providers** (highest priority)
+2. **Request body API keys** (legacy support)
+3. **Environment-configured providers** (fallback)
 
 ### Fallback Mode
 
-If no user-provided API keys are sent, the system will use the configured API keys from environment variables:
+If no credentials are provided, the system will use the configured credentials from environment variables:
 
 ```bash
 curl -X POST http://localhost:8080/send-email \
@@ -75,6 +137,45 @@ curl -X POST http://localhost:8080/send-email \
 curl http://localhost:8080/email-logs?limit=10
 ```
 
+### Example: Send Email with SMTP
+
+```bash
+curl --location 'http://localhost:8080/send-email' \
+--header 'Content-Type: application/json' \
+--header 'X-SMTP-Host: smtp.gmail.com' \
+--header 'X-SMTP-Port: 587' \
+--header 'X-SMTP-Username: your-email@gmail.com' \
+--header 'X-SMTP-Password: your-app-password' \
+--header 'X-SMTP-From: your-email@gmail.com' \
+--header 'X-SMTP-Use-TLS: true' \
+--data-raw '{
+   "from_email": "your-email@gmail.com",
+   "from_name": "Your Name",
+   "to_email": "recipient@example.com",
+   "to_name": "Recipient Name",
+   "subject": "Test Email",
+   "html_content": "<html><body><h1>Hello!</h1><p>This is a test email sent via SMTP.</p></body></html>",
+   "provider": "smtp"
+}'
+```
+
+### Example: Send Email with Breevo
+
+```bash
+curl --location 'http://localhost:8080/send-email' \
+--header 'Content-Type: application/json' \
+--header 'X-Breevo-API-Key: your-breevo-api-key' \
+--data-raw '{
+   "from_email": "sender@example.com",
+   "from_name": "Sender Name",
+   "to_email": "recipient@example.com",
+   "to_name": "Recipient Name",
+   "subject": "Test Email",
+   "html_content": "<html><body><h1>Hello!</h1><p>This is a test email sent via Breevo.</p></body></html>",
+   "provider": "breevo"
+}'
+```
+
 ---
 
 ### Folder Structure
@@ -84,13 +185,14 @@ chitthi/
 ├── cmd/ # Entry point
 │ └── main.go
 ├── internal/ # All core business logic
-│ ├── api/ # HTTP handlers
 │ ├── config/ # .env loading
-│ ├── email/ # Provider-specific logic (Breevo, SendGrid, MailerSend)
-│ ├── queue/ # RabbitMQ logic
-│ ├── cache/ # Redis helpers
-│ ├── db/ # Postgres logic
-│ └── model/ # Structs: EmailJob, Logs etc.
+│ ├── database/ # Postgres logic
+│ ├── email/ # Provider-specific logic (Breevo, SendGrid, MailerSend, SMTP)
+│ ├── handler/ # HTTP handlers
+│ ├── model/ # Structs: EmailJob, Logs etc.
+│ └── modules/ # Business logic modules
+│   └── email/ # Email service and handlers
+├── migrations/ # Database migrations
 ├── .env
 ├── go.mod
 ├── go.sum
@@ -188,13 +290,14 @@ SELECT * FROM email_logs LIMIT 5;
 
 ### 👀 Roadmap
 
-👀 Roadmap
-• Provider Adapter Interface
 • Usage stats (GET /usage)
 • Rate limiting via Redis
 • RabbitMQ-based queue system
 • Admin Dashboard (V2)
 • Templates, Contacts, Logs (V2)
+• Multi-tenant support
+• Email templates
+• Bulk email sending
 
 ### Tech Stack
 
@@ -205,7 +308,58 @@ SELECT * FROM email_logs LIMIT 5;
     •	Breevo (Email API)
     •	SendGrid (Email API)
     •	MailerSend (Email API)
+    •	SMTP (Direct email sending)
 
-### 👋 Contribute
+## 🔐 Security Best Practices
+
+### SMTP Configuration
+
+When using SMTP, follow these security guidelines:
+
+1. **Use App Passwords**: For Gmail, use App Passwords instead of your regular password
+2. **Enable 2FA**: Enable two-factor authentication on your email account
+3. **Use Environment Variables**: Store sensitive credentials in environment variables for production
+4. **HTTPS Only**: Always use HTTPS in production to protect credentials in headers
+
+### Popular SMTP Providers
+
+#### Gmail
+
+```bash
+X-SMTP-Host: smtp.gmail.com
+X-SMTP-Port: 587
+X-SMTP-Username: your-email@gmail.com
+X-SMTP-Password: your-app-password
+X-SMTP-From: your-email@gmail.com
+X-SMTP-Use-TLS: true
+```
+
+#### Outlook/Hotmail
+
+```bash
+X-SMTP-Host: smtp-mail.outlook.com
+X-SMTP-Port: 587
+X-SMTP-Username: your-email@outlook.com
+X-SMTP-Password: your-password
+X-SMTP-From: your-email@outlook.com
+X-SMTP-Use-TLS: true
+```
+
+#### Yahoo
+
+```bash
+X-SMTP-Host: smtp.mail.yahoo.com
+X-SMTP-Port: 587
+X-SMTP-Username: your-email@yahoo.com
+X-SMTP-Password: your-app-password
+X-SMTP-From: your-email@yahoo.com
+X-SMTP-Use-TLS: true
+```
+
+## 📚 Documentation
+
+For detailed SMTP setup instructions, see [SMTP_SETUP.md](SMTP_SETUP.md).
+
+## 👋 Contribute
 
 Want to contribute? Fork this repo or reach out at sachinkshuklaoo7@email.com
