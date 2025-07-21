@@ -36,7 +36,15 @@ func NewService(cfg config.Config) *Service {
 	}
 }
 
-func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) error {
+// SendEmailResult represents the result of email sending operation
+type SendEmailResult struct {
+	Success   bool
+	Provider  string
+	Error     error
+	EmailData *model.EmailData
+}
+
+func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailResult {
 	emailReq := model.EmailRequest{
 		FromEmail:   req.FromEmail,
 		FromName:    req.FromName,
@@ -44,7 +52,7 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) error {
 		ToName:      req.ToName,
 		Subject:     req.Subject,
 		HTMLContent: req.HTMLContent,
-		Provider:    req.Provider, // Pass the provider preference
+		Provider:    req.Provider,
 	}
 
 	var provider adapters.EmailProvider
@@ -62,7 +70,16 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) error {
 			provider, err = s.getProviderByName(req.Provider)
 			if err != nil {
 				log.Printf("Requested provider '%s' not available: %v", req.Provider, err)
-				return err
+				return &SendEmailResult{
+					Success: false,
+					Error:   err,
+					EmailData: &model.EmailData{
+						SentTo:   req.ToEmail,
+						SentFrom: req.FromEmail,
+						Subject:  req.Subject,
+						Provider: req.Provider,
+					},
+				}
 			}
 		}
 		providerName = req.Provider
@@ -98,16 +115,19 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) error {
 			}
 
 			if lastError != nil {
-				logErr := s.repo.InsertLog(ctx, &EmailLog{
-					RecipientEmail: req.ToEmail,
-					Subject:        req.Subject,
-					Provider:       "all_failed",
-					Status:         "failed",
-				})
-				if logErr != nil {
-					log.Printf("Failed to log email failure: %v", logErr)
+				// Log failure but don't return error - email sending failed
+				s.logEmailAttempt(ctx, req, "all_failed", "failed", lastError)
+				return &SendEmailResult{
+					Success:  false,
+					Error:    lastError,
+					Provider: "all_failed",
+					EmailData: &model.EmailData{
+						SentTo:   req.ToEmail,
+						SentFrom: req.FromEmail,
+						Subject:  req.Subject,
+						Provider: "all_failed",
+					},
 				}
-				return lastError
 			}
 		} else {
 			// Try to get provider from user-provided API keys (legacy support)
@@ -115,14 +135,30 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) error {
 				provider, err = adapters.GetProviderFromRequest(req.BreevoAPIKey, req.SendGridAPIKey, req.MailerSendAPIKey)
 				if err != nil {
 					log.Printf("Failed to create provider from user API keys: %v", err)
-					return err
+					return &SendEmailResult{
+						Success: false,
+						Error:   err,
+						EmailData: &model.EmailData{
+							SentTo:   req.ToEmail,
+							SentFrom: req.FromEmail,
+							Subject:  req.Subject,
+						},
+					}
 				}
 				providerName = provider.GetName()
 				log.Printf("📧 Using user-provided API key for provider: %s", providerName)
 			} else {
 				// Fallback to config-based providers with load balancing
 				if len(s.providers) == 0 {
-					return adapters.ErrNoProvidersAvailable
+					return &SendEmailResult{
+						Success: false,
+						Error:   adapters.ErrNoProvidersAvailable,
+						EmailData: &model.EmailData{
+							SentTo:   req.ToEmail,
+							SentFrom: req.FromEmail,
+							Subject:  req.Subject,
+						},
+					}
 				}
 
 				// Simple failover - try each provider until one succeeds
@@ -139,16 +175,19 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) error {
 				}
 
 				if lastError != nil {
-					logErr := s.repo.InsertLog(ctx, &EmailLog{
-						RecipientEmail: req.ToEmail,
-						Subject:        req.Subject,
-						Provider:       "all_failed",
-						Status:         "failed",
-					})
-					if logErr != nil {
-						log.Printf("Failed to log email failure: %v", logErr)
+					// Log failure but don't return error - email sending failed
+					s.logEmailAttempt(ctx, req, "all_failed", "failed", lastError)
+					return &SendEmailResult{
+						Success:  false,
+						Error:    lastError,
+						Provider: "all_failed",
+						EmailData: &model.EmailData{
+							SentTo:   req.ToEmail,
+							SentFrom: req.FromEmail,
+							Subject:  req.Subject,
+							Provider: "all_failed",
+						},
 					}
-					return lastError
 				}
 			}
 		}
@@ -158,26 +197,71 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) error {
 	if provider != nil {
 		err = provider.SendEmail(emailReq)
 		if err != nil {
-			logErr := s.repo.InsertLog(ctx, &EmailLog{
-				RecipientEmail: req.ToEmail,
-				Subject:        req.Subject,
-				Provider:       providerName,
-				Status:         "failed",
-			})
-			if logErr != nil {
-				log.Printf("Failed to log email failure: %v", logErr)
+			// Log failure but don't return error - email sending failed
+			s.logEmailAttempt(ctx, req, providerName, "failed", err)
+			return &SendEmailResult{
+				Success:  false,
+				Error:    err,
+				Provider: providerName,
+				EmailData: &model.EmailData{
+					SentTo:   req.ToEmail,
+					SentFrom: req.FromEmail,
+					Subject:  req.Subject,
+					Provider: providerName,
+				},
 			}
-			return err
 		}
 		log.Printf("📧 Email sent successfully via provider: %s", providerName)
 	}
 
-	return s.repo.InsertLog(ctx, &EmailLog{
+	// Email sent successfully, now log it
+	logResult := s.logEmailAttempt(ctx, req, providerName, "sent", nil)
+
+	return &SendEmailResult{
+		Success:  true,
+		Provider: providerName,
+		EmailData: &model.EmailData{
+			SentTo:   req.ToEmail,
+			SentFrom: req.FromEmail,
+			Subject:  req.Subject,
+			Provider: providerName,
+			LogSaved: logResult.Success,
+			LogID:    logResult.LogID,
+			LogError: logResult.Error,
+		},
+	}
+}
+
+// LogResult represents the result of logging operation
+type LogResult struct {
+	Success bool
+	LogID   *int
+	Error   string
+}
+
+// logEmailAttempt logs email attempt and returns result without affecting email sending
+func (s *Service) logEmailAttempt(ctx context.Context, req *EmailRequest, provider, status string, emailError error) *LogResult {
+	logEntry := &EmailLog{
 		RecipientEmail: req.ToEmail,
 		Subject:        req.Subject,
-		Provider:       providerName,
-		Status:         "sent",
-	})
+		Provider:       provider,
+		Status:         status,
+	}
+
+	err := s.repo.InsertLog(ctx, logEntry)
+	if err != nil {
+		// Log the error but don't affect email sending
+		log.Printf("⚠️  Failed to log email attempt: %v", err)
+		return &LogResult{
+			Success: false,
+			Error:   err.Error(),
+		}
+	}
+
+	return &LogResult{
+		Success: true,
+		LogID:   &logEntry.ID,
+	}
 }
 
 func (s *Service) GetLogs(ctx context.Context, limit int) ([]EmailLog, error) {
