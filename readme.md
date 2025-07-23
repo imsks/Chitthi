@@ -56,33 +56,70 @@ Chitthi is a modern email microservice designed for developers who want simplici
 
 -   **Docker & Docker Compose**
 -   **Go 1.24.3+** (for development)
+-   **Node.js 18+** (for web frontend)
 -   **Git**
 
-### 1. Clone the Repository
+### Option 1: Using the Development Script (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/imsks/chitthi.git
+cd chitthi
+
+# Run the development script
+./dev.sh
+
+# Or run specific commands
+./dev.sh full      # Full setup
+./dev.sh infra     # Start infrastructure only
+./dev.sh install   # Install web dependencies
+./dev.sh backend   # Start Go backend
+./dev.sh frontend  # Start web frontend
+```
+
+### Option 2: Manual Setup
+
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/imsks/chitthi.git
 cd chitthi
 ```
 
-### 2. Start Infrastructure
+#### 2. Start Infrastructure
 
 ```bash
 # Start Redis and PostgreSQL
 docker compose up redis db -d
 ```
 
-### 3. Run the Service
+#### 3. Install Web Dependencies
 
 ```bash
-# Development with hot reload
-air
-
-# Or run directly
-go run cmd/main.go
+cd web
+npm install
+cd ..
 ```
 
-### 4. Test the API
+#### 4. Run the Services
+
+```bash
+# Terminal 1: Start Go backend
+go run cmd/main.go
+
+# Terminal 2: Start web frontend
+cd web
+npm run dev
+```
+
+#### 5. Access the Applications
+
+-   **Backend API**: http://localhost:8080
+-   **Web Frontend**: http://localhost:3000
+-   **Documentation**: http://localhost:3000/docs
+-   **Quick Start Guide**: http://localhost:3000/quick-start
+
+#### 6. Test the API
 
 ```bash
 curl -X POST http://localhost:8080/send-email \
