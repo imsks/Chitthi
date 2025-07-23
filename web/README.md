@@ -1,8 +1,9 @@
-# 📬 Chitthi
+# 📬 Chitthi Web
 
-[![Go Version](https://img.shields.io/badge/Go-1.24.3-blue.svg)](https://golang.org)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
+[![Version](https://img.shields.io/badge/Version-v1.0.0-green.svg)](https://github.com/imsks/chitthi)
+[![Next.js](https://img.shields.io/badge/Next.js-13+-black.svg)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0+-38B2AC.svg)](https://tailwindcss.com)
 
 A lightweight, production-ready email microservice built in Go with **BYOK (Bring Your Own Key)** approach and multi-provider support.
 

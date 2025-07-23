@@ -1,5 +1,6 @@
 # 📬 Chitthi
 
+[![Version](https://img.shields.io/badge/Version-v1.0.0-green.svg)](https://github.com/imsks/chitthi)
 [![Go Version](https://img.shields.io/badge/Go-1.24.3-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)

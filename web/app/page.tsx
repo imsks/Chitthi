@@ -55,9 +55,14 @@ export default function Home() {
                         <div className='w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center'>
                             <Mail className='w-5 h-5 text-white' />
                         </div>
-                        <span className='text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>
-                            Chitthi
-                        </span>
+                        <div className='flex items-center space-x-2'>
+                            <span className='text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>
+                                Chitthi
+                            </span>
+                            <Badge className='bg-green-100 text-green-800 text-xs font-medium'>
+                                v1.0.0
+                            </Badge>
+                        </div>
                     </motion.div>
 
                     <motion.nav

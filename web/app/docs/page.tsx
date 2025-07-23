@@ -124,9 +124,14 @@ export default function DocsPage() {
                             <div className='w-6 h-6 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center'>
                                 <Mail className='w-4 h-4 text-white' />
                             </div>
-                            <span className='text-xl font-bold'>
-                                Chitthi Docs
-                            </span>
+                            <div className='flex items-center space-x-2'>
+                                <span className='text-xl font-bold'>
+                                    Chitthi Docs
+                                </span>
+                                <Badge className='bg-green-100 text-green-800 text-xs font-medium'>
+                                    v1.0.0
+                                </Badge>
+                            </div>
                         </div>
                     </div>
 

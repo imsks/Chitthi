@@ -110,9 +110,14 @@ export default function QuickStartPage() {
                             <div className='w-6 h-6 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center'>
                                 <Mail className='w-4 h-4 text-white' />
                             </div>
-                            <span className='text-xl font-bold'>
-                                Quick Start
-                            </span>
+                            <div className='flex items-center space-x-2'>
+                                <span className='text-xl font-bold'>
+                                    Quick Start
+                                </span>
+                                <Badge className='bg-green-100 text-green-800 text-xs font-medium'>
+                                    v1.0.0
+                                </Badge>
+                            </div>
                         </div>
                     </div>
 
@@ -135,7 +140,6 @@ export default function QuickStartPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}>
-                    
                     {/* Introduction */}
                     <div className='text-center mb-12'>
                         <Badge className='mb-4 bg-blue-100 text-blue-800'>
@@ -145,9 +149,10 @@ export default function QuickStartPage() {
                             How would you like to integrate Chitthi?
                         </h1>
                         <p className='text-xl text-gray-600 max-w-3xl mx-auto'>
-                            Select the integration method that best fits your needs. 
-                            You can either set up the project locally with full control, 
-                            or use our hosted APIs for quick integration.
+                            Select the integration method that best fits your
+                            needs. You can either set up the project locally
+                            with full control, or use our hosted APIs for quick
+                            integration.
                         </p>
                     </div>
 
@@ -157,7 +162,6 @@ export default function QuickStartPage() {
                             value={selectedOption}
                             onValueChange={setSelectedOption}
                             className='grid md:grid-cols-2 gap-6'>
-                            
                             {/* Option 1: Local Setup */}
                             <motion.div
                                 initial={{ opacity: 0, x: -20 }}
@@ -166,11 +170,12 @@ export default function QuickStartPage() {
                                 <Label
                                     htmlFor='local-setup'
                                     className='cursor-pointer'>
-                                    <Card className={`h-full transition-all duration-300 hover:shadow-lg ${
-                                        selectedOption === 'local-setup' 
-                                            ? 'ring-2 ring-blue-500 bg-blue-50' 
-                                            : 'hover:shadow-md'
-                                    }`}>
+                                    <Card
+                                        className={`h-full transition-all duration-300 hover:shadow-lg ${
+                                            selectedOption === "local-setup"
+                                                ? "ring-2 ring-blue-500 bg-blue-50"
+                                                : "hover:shadow-md"
+                                        }`}>
                                         <CardHeader>
                                             <div className='flex items-center space-x-3'>
                                                 <RadioGroupItem
@@ -186,7 +191,8 @@ export default function QuickStartPage() {
                                                         Local Setup
                                                     </CardTitle>
                                                     <CardDescription>
-                                                        Full control with local infrastructure
+                                                        Full control with local
+                                                        infrastructure
                                                     </CardDescription>
                                                 </div>
                                             </div>
@@ -196,25 +202,29 @@ export default function QuickStartPage() {
                                                 <div className='flex items-center space-x-2'>
                                                     <CheckCircle className='w-4 h-4 text-green-600' />
                                                     <span className='text-sm text-gray-600'>
-                                                        Complete control over your infrastructure
+                                                        Complete control over
+                                                        your infrastructure
                                                     </span>
                                                 </div>
                                                 <div className='flex items-center space-x-2'>
                                                     <CheckCircle className='w-4 h-4 text-green-600' />
                                                     <span className='text-sm text-gray-600'>
-                                                        Setup Redis and PostgreSQL yourself
+                                                        Setup Redis and
+                                                        PostgreSQL yourself
                                                     </span>
                                                 </div>
                                                 <div className='flex items-center space-x-2'>
                                                     <CheckCircle className='w-4 h-4 text-green-600' />
                                                     <span className='text-sm text-gray-600'>
-                                                        Customize as per your needs
+                                                        Customize as per your
+                                                        needs
                                                     </span>
                                                 </div>
                                                 <div className='flex items-center space-x-2'>
                                                     <CheckCircle className='w-4 h-4 text-green-600' />
                                                     <span className='text-sm text-gray-600'>
-                                                        Perfect for production deployments
+                                                        Perfect for production
+                                                        deployments
                                                     </span>
                                                 </div>
                                             </div>
@@ -231,11 +241,12 @@ export default function QuickStartPage() {
                                 <Label
                                     htmlFor='api-integration'
                                     className='cursor-pointer'>
-                                    <Card className={`h-full transition-all duration-300 hover:shadow-lg ${
-                                        selectedOption === 'api-integration' 
-                                            ? 'ring-2 ring-blue-500 bg-blue-50' 
-                                            : 'hover:shadow-md'
-                                    }`}>
+                                    <Card
+                                        className={`h-full transition-all duration-300 hover:shadow-lg ${
+                                            selectedOption === "api-integration"
+                                                ? "ring-2 ring-blue-500 bg-blue-50"
+                                                : "hover:shadow-md"
+                                        }`}>
                                         <CardHeader>
                                             <div className='flex items-center space-x-3'>
                                                 <RadioGroupItem
@@ -251,7 +262,8 @@ export default function QuickStartPage() {
                                                         API Integration
                                                     </CardTitle>
                                                     <CardDescription>
-                                                        Use our hosted APIs directly
+                                                        Use our hosted APIs
+                                                        directly
                                                     </CardDescription>
                                                 </div>
                                             </div>
@@ -261,25 +273,29 @@ export default function QuickStartPage() {
                                                 <div className='flex items-center space-x-2'>
                                                     <CheckCircle className='w-4 h-4 text-green-600' />
                                                     <span className='text-sm text-gray-600'>
-                                                        Quick integration with REST APIs
+                                                        Quick integration with
+                                                        REST APIs
                                                     </span>
                                                 </div>
                                                 <div className='flex items-center space-x-2'>
                                                     <CheckCircle className='w-4 h-4 text-green-600' />
                                                     <span className='text-sm text-gray-600'>
-                                                        No infrastructure setup required
+                                                        No infrastructure setup
+                                                        required
                                                     </span>
                                                 </div>
                                                 <div className='flex items-center space-x-2'>
                                                     <CheckCircle className='w-4 h-4 text-green-600' />
                                                     <span className='text-sm text-gray-600'>
-                                                        Production-ready hosted service
+                                                        Production-ready hosted
+                                                        service
                                                     </span>
                                                 </div>
                                                 <div className='flex items-center space-x-2'>
                                                     <CheckCircle className='w-4 h-4 text-green-600' />
                                                     <span className='text-sm text-gray-600'>
-                                                        Perfect for rapid prototyping
+                                                        Perfect for rapid
+                                                        prototyping
                                                     </span>
                                                 </div>
                                             </div>
@@ -296,15 +312,15 @@ export default function QuickStartPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6, delay: 0.2 }}>
-                            
-                            {selectedOption === 'local-setup' && (
+                            {selectedOption === "local-setup" && (
                                 <div className='space-y-8'>
                                     <div className='text-center'>
                                         <h2 className='text-3xl font-bold text-gray-900 mb-4'>
                                             Local Setup Guide
                                         </h2>
                                         <p className='text-xl text-gray-600 max-w-2xl mx-auto'>
-                                            Set up Chitthi locally with full control over your infrastructure
+                                            Set up Chitthi locally with full
+                                            control over your infrastructure
                                         </p>
                                     </div>
 
@@ -321,11 +337,17 @@ export default function QuickStartPage() {
                                                 <div className='space-y-2'>
                                                     <div className='flex items-center space-x-2'>
                                                         <CheckCircle className='w-4 h-4 text-green-600' />
-                                                        <span>Docker & Docker Compose</span>
+                                                        <span>
+                                                            Docker & Docker
+                                                            Compose
+                                                        </span>
                                                     </div>
                                                     <div className='flex items-center space-x-2'>
                                                         <CheckCircle className='w-4 h-4 text-green-600' />
-                                                        <span>Go 1.24.3+ (for development)</span>
+                                                        <span>
+                                                            Go 1.24.3+ (for
+                                                            development)
+                                                        </span>
                                                     </div>
                                                 </div>
                                                 <div className='space-y-2'>
@@ -335,7 +357,10 @@ export default function QuickStartPage() {
                                                     </div>
                                                     <div className='flex items-center space-x-2'>
                                                         <CheckCircle className='w-4 h-4 text-green-600' />
-                                                        <span>PostgreSQL & Redis (or Docker)</span>
+                                                        <span>
+                                                            PostgreSQL & Redis
+                                                            (or Docker)
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -367,7 +392,11 @@ cd chitthi`}
                                             </h3>
                                             <div className='space-y-4'>
                                                 <p className='text-gray-600'>
-                                                    Create a <code className='bg-gray-100 px-2 py-1 rounded'>.env</code> file in the root directory:
+                                                    Create a{" "}
+                                                    <code className='bg-gray-100 px-2 py-1 rounded'>
+                                                        .env
+                                                    </code>{" "}
+                                                    file in the root directory:
                                                 </p>
                                                 <CodeBlock
                                                     id='env-config'
@@ -403,7 +432,9 @@ SMTP_USE_TLS=true`}
                                                     <Button
                                                         variant='link'
                                                         className='p-0 h-auto text-blue-600'
-                                                        onClick={() => copyToClipboard(`PORT=8080
+                                                        onClick={() =>
+                                                            copyToClipboard(
+                                                                `PORT=8080
 
 # Redis config
 REDIS_URL=redis://redis:6379
@@ -427,7 +458,10 @@ SMTP_PORT=
 SMTP_USERNAME=
 SMTP_PASSWORD=
 SMTP_FROM=
-SMTP_USE_TLS=true`, 'env-download')}>
+SMTP_USE_TLS=true`,
+                                                                "env-download"
+                                                            )
+                                                        }>
                                                         Download .env.example
                                                     </Button>
                                                 </div>
@@ -501,7 +535,9 @@ go run cmd/main.go`}
                                                         Success!
                                                     </h4>
                                                     <p className='text-green-800'>
-                                                        Your local Chitthi service is now running on{' '}
+                                                        Your local Chitthi
+                                                        service is now running
+                                                        on{" "}
                                                         <code className='bg-green-200 px-1 rounded'>
                                                             http://localhost:8080
                                                         </code>
@@ -513,14 +549,15 @@ go run cmd/main.go`}
                                 </div>
                             )}
 
-                            {selectedOption === 'api-integration' && (
+                            {selectedOption === "api-integration" && (
                                 <div className='space-y-8'>
                                     <div className='text-center'>
                                         <h2 className='text-3xl font-bold text-gray-900 mb-4'>
                                             API Integration Guide
                                         </h2>
                                         <p className='text-xl text-gray-600 max-w-2xl mx-auto'>
-                                            Integrate with our hosted Chitthi APIs for quick email functionality
+                                            Integrate with our hosted Chitthi
+                                            APIs for quick email functionality
                                         </p>
                                     </div>
 
@@ -535,7 +572,9 @@ go run cmd/main.go`}
                                         <CardContent>
                                             <div className='space-y-4'>
                                                 <div>
-                                                    <h4 className='font-semibold mb-2'>Production API</h4>
+                                                    <h4 className='font-semibold mb-2'>
+                                                        Production API
+                                                    </h4>
                                                     <code className='bg-gray-100 px-3 py-2 rounded text-sm block'>
                                                         https://chitthi-development.up.railway.app
                                                     </code>
@@ -543,7 +582,8 @@ go run cmd/main.go`}
                                                 <div className='flex items-center space-x-2'>
                                                     <CheckCircle className='w-4 h-4 text-green-600' />
                                                     <span className='text-sm text-gray-600'>
-                                                        Always available and production-ready
+                                                        Always available and
+                                                        production-ready
                                                     </span>
                                                 </div>
                                             </div>
@@ -601,14 +641,17 @@ go run cmd/main.go`}
                                                 Provider Examples
                                             </CardTitle>
                                             <CardDescription>
-                                                Different ways to send emails with various providers
+                                                Different ways to send emails
+                                                with various providers
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent>
                                             <ScrollArea className='h-96'>
                                                 <div className='space-y-4'>
                                                     <div>
-                                                        <h4 className='font-semibold mb-2'>SendGrid</h4>
+                                                        <h4 className='font-semibold mb-2'>
+                                                            SendGrid
+                                                        </h4>
                                                         <CodeBlock
                                                             id='sendgrid-example'
                                                             code={`curl -X POST https://chitthi-development.up.railway.app/send-email \\
@@ -623,7 +666,9 @@ go run cmd/main.go`}
                                                         />
                                                     </div>
                                                     <div>
-                                                        <h4 className='font-semibold mb-2'>Breevo</h4>
+                                                        <h4 className='font-semibold mb-2'>
+                                                            Breevo
+                                                        </h4>
                                                         <CodeBlock
                                                             id='breevo-example'
                                                             code={`curl -X POST https://chitthi-development.up.railway.app/send-email \\
@@ -638,7 +683,9 @@ go run cmd/main.go`}
                                                         />
                                                     </div>
                                                     <div>
-                                                        <h4 className='font-semibold mb-2'>MailerSend</h4>
+                                                        <h4 className='font-semibold mb-2'>
+                                                            MailerSend
+                                                        </h4>
                                                         <CodeBlock
                                                             id='mailersend-example'
                                                             code={`curl -X POST https://chitthi-development.up.railway.app/send-email \\
@@ -666,11 +713,15 @@ go run cmd/main.go`}
                                                         Ready to Integrate!
                                                     </h4>
                                                     <p className='text-blue-800'>
-                                                        Your application can now send emails through our hosted API. 
-                                                        Check out the{' '}
-                                                        <Link href='/docs' className='text-blue-600 underline'>
+                                                        Your application can now
+                                                        send emails through our
+                                                        hosted API. Check out
+                                                        the{" "}
+                                                        <Link
+                                                            href='/docs'
+                                                            className='text-blue-600 underline'>
                                                             full documentation
-                                                        </Link>{' '}
+                                                        </Link>{" "}
                                                         for more details.
                                                     </p>
                                                 </div>
@@ -691,9 +742,7 @@ go run cmd/main.go`}
                                         View Full Documentation
                                     </Link>
                                 </Button>
-                                <Button
-                                    asChild
-                                    className='px-8'>
+                                <Button asChild className='px-8'>
                                     <a
                                         href='https://github.com/imsks/chitthi'
                                         target='_blank'
@@ -709,4 +758,4 @@ go run cmd/main.go`}
             </div>
         </div>
     )
-} 
+}
