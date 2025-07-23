@@ -1,2 +1,23 @@
 .env
 tmp/
+
+# Web dependencies
+web/node_modules
+web/.next
+web/.bolt
+web/out
+web/build
+# debug
+web/npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
+# local env files
+web/.env
+web/.env*.local
+
+# vercel
+web/.vercel
+
+# typescript
+web/*.tsbuildinfo
+web/next-env.d.ts
