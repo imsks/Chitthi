@@ -356,15 +356,46 @@ check_docker_daemon() {
 start_infrastructure() {
     echo -e "${BLUE}🏗️  Starting infrastructure (Redis & PostgreSQL)...${NC}"
     if command_exists docker && check_docker_daemon; then
+        # Check if docker-compose.yml exists
+        if [[ ! -f "docker-compose.yml" ]]; then
+            echo -e "${RED}❌ docker-compose.yml not found${NC}"
+            return 1
+        fi
+        
         # Try modern docker compose first, fallback to docker-compose
+        local compose_cmd=""
+        local compose_error=""
+        
         if docker compose version >/dev/null 2>&1; then
-            docker compose up -d redis db
+            compose_cmd="docker compose"
         elif command_exists docker-compose; then
-            docker-compose up -d redis db
+            compose_cmd="docker-compose"
         else
             echo -e "${RED}❌ Neither 'docker compose' nor 'docker-compose' is available${NC}"
             return 1
         fi
+        
+        echo -e "${CYAN}Using: $compose_cmd${NC}"
+        
+        # Run the compose command with error handling
+        if ! $compose_cmd up -d redis db 2>/tmp/compose_error.log; then
+            echo -e "${RED}❌ Failed to start infrastructure${NC}"
+            if [[ -f "/tmp/compose_error.log" ]]; then
+                echo -e "${YELLOW}Error details:${NC}"
+                cat /tmp/compose_error.log
+                
+                # Check for common issues and provide solutions
+                if grep -q "unsupported.*version" /tmp/compose_error.log 2>/dev/null; then
+                    echo -e "${BLUE}💡 Tip: Try updating Docker Desktop or use 'docker-compose' instead of 'docker compose'${NC}"
+                fi
+                
+                rm -f /tmp/compose_error.log
+            fi
+            return 1
+        fi
+        
+        # Clean up error log if successful
+        rm -f /tmp/compose_error.log
         
         echo -e "${GREEN}✅ Infrastructure started${NC}"
         echo -e "${CYAN}   - PostgreSQL: localhost:5432${NC}"
