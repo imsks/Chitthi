@@ -1,13 +1,25 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/imsks/chitthi/internal/config"
 	"github.com/imsks/chitthi/internal/database"
 	"github.com/imsks/chitthi/internal/modules/email"
 )
+
+const Version = "v1.0.0"
+
+type VersionResponse struct {
+	Version   string `json:"version"`
+	Service   string `json:"service"`
+	Status    string `json:"status"`
+	Timestamp string `json:"timestamp"`
+}
 
 func main() {
 	cfg := config.LoadConfig()
@@ -24,7 +36,19 @@ func main() {
 
 	// Setup routes
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("📮 Welcome to Chitthi - BYOK Email Delivery Service"))
+		w.Write([]byte(fmt.Sprintf("📮 Welcome to Chitthi %s - BYOK Email Delivery Service", Version)))
+	})
+
+	// Version endpoint
+	http.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		response := VersionResponse{
+			Version:   Version,
+			Service:   "Chitthi Email Service",
+			Status:    "running",
+			Timestamp: fmt.Sprintf("%d", time.Now().Unix()),
+		}
+		json.NewEncoder(w).Encode(response)
 	})
 
 	// Email module routes
@@ -32,6 +56,6 @@ func main() {
 	http.HandleFunc("/email-logs", emailHandler.GetLogs)
 
 	addr := ":" + cfg.Port
-	log.Printf("🚀 Chitthi running on http://localhost%s", addr)
+	log.Printf("🚀 Chitthi %s running on http://localhost%s", Version, addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }

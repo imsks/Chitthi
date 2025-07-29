@@ -17,13 +17,27 @@ func CreateProvidersFromConfig(cfg config.Config) []EmailProvider {
 	}
 
 	if cfg.SendGridAPIKey != "" {
-		providers = append(providers, &SendGridAdapter{APIKey: cfg.SendGridAPIKey})
-		log.Println("🚀 SendGrid provider added from config")
+		providers = append(providers, NewSendGridAdapter(cfg.SendGridAPIKey, cfg.SendGridRegion))
+		log.Printf("🚀 SendGrid provider added from config (region: %s)", cfg.SendGridRegion)
 	}
 
 	if cfg.MailerSendAPIKey != "" {
 		providers = append(providers, &MailerSendAdapter{APIKey: cfg.MailerSendAPIKey})
 		log.Println("🚀 MailerSend provider added from config")
+	}
+
+	// Add SMTP provider if configured
+	if cfg.SMTPHost != "" && cfg.SMTPUsername != "" && cfg.SMTPPassword != "" {
+		smtpAdapter := &SMTPAdapter{
+			Host:     cfg.SMTPHost,
+			Port:     cfg.SMTPPort,
+			Username: cfg.SMTPUsername,
+			Password: cfg.SMTPPassword,
+			From:     cfg.SMTPFrom,
+			UseTLS:   cfg.SMTPUseTLS,
+		}
+		providers = append(providers, smtpAdapter)
+		log.Println("🚀 SMTP provider added from config")
 	}
 
 	if len(providers) == 0 {
@@ -43,7 +57,7 @@ func CreateProviderFromAPIKey(apiKey, keyName string) (EmailProvider, error) {
 	case "BREEVO_API_KEY":
 		return &BreevoAdapter{APIKey: apiKey}, nil
 	case "SENDGRID_API_KEY":
-		return &SendGridAdapter{APIKey: apiKey}, nil
+		return NewSendGridAdapter(apiKey, ""), nil
 	case "MAILERSEND_API_KEY":
 		return &MailerSendAdapter{APIKey: apiKey}, nil
 	default:
