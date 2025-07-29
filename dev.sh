@@ -244,7 +244,7 @@ PORT=8080
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable
 
 # Redis Configuration
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://localhost:6543
 
 # PostgreSQL Configuration (for Docker)
 POSTGRES_USER=postgres
@@ -414,7 +414,7 @@ start_infrastructure() {
                             echo -e "${GREEN}✅ Infrastructure started with sudo${NC}"
                             echo -e "${YELLOW}⚠️  Please logout and login again to use Docker without sudo${NC}"
                             echo -e "${CYAN}   - PostgreSQL: localhost:5432${NC}"
-                            echo -e "${CYAN}   - Redis: localhost:6379${NC}"
+                            echo -e "${CYAN}   - Redis: localhost:6543${NC}"
                             rm -f /tmp/compose_error.log
                             return 0
                         fi
@@ -428,7 +428,7 @@ start_infrastructure() {
                         if /usr/local/bin/docker-compose up -d redis db; then
                             echo -e "${GREEN}✅ Infrastructure started with updated docker-compose${NC}"
                             echo -e "${CYAN}   - PostgreSQL: localhost:5432${NC}"
-                            echo -e "${CYAN}   - Redis: localhost:6379${NC}"
+                            echo -e "${CYAN}   - Redis: localhost:6543${NC}"
                             rm -f /tmp/compose_error.log
                             return 0
                         fi
@@ -445,7 +445,7 @@ start_infrastructure() {
         
         echo -e "${GREEN}✅ Infrastructure started${NC}"
         echo -e "${CYAN}   - PostgreSQL: localhost:5432${NC}"
-        echo -e "${CYAN}   - Redis: localhost:6379${NC}"
+        echo -e "${CYAN}   - Redis: localhost:6543${NC}"
     else
         echo -e "${RED}❌ Docker not available or not running${NC}"
         return 1
