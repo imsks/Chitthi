@@ -154,9 +154,12 @@ install_docker() {
                 sudo usermod -aG docker $USER
                 rm get-docker.sh
                 
-                # Install Docker Compose
-                sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-                sudo chmod +x /usr/local/bin/docker-compose
+                # Install Docker Compose if not available as plugin
+                if ! docker compose version >/dev/null 2>&1 && ! command_exists docker-compose; then
+                    echo -e "${BLUE}Installing Docker Compose...${NC}"
+                    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                    sudo chmod +x /usr/local/bin/docker-compose
+                fi
                 
                 echo -e "${YELLOW}⚠️  Please logout and login again to use Docker without sudo${NC}"
                 ;;
@@ -166,6 +169,24 @@ install_docker() {
         esac
     else
         echo -e "${GREEN}✅ Docker $(docker --version | cut -d' ' -f3 | tr -d ',') is already installed${NC}"
+        
+        # Check if Docker Compose is available
+        if docker compose version >/dev/null 2>&1; then
+            echo -e "${GREEN}✅ Docker Compose (plugin) is available${NC}"
+        elif command_exists docker-compose; then
+            echo -e "${GREEN}✅ Docker Compose (standalone) is available${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Docker Compose not found, trying to install...${NC}"
+            case $OS in
+                "macos")
+                    echo -e "${BLUE}Docker Compose should be included with Docker Desktop${NC}"
+                    ;;
+                "linux")
+                    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                    sudo chmod +x /usr/local/bin/docker-compose
+                    ;;
+            esac
+        fi
     fi
 }
 
@@ -335,7 +356,16 @@ check_docker_daemon() {
 start_infrastructure() {
     echo -e "${BLUE}🏗️  Starting infrastructure (Redis & PostgreSQL)...${NC}"
     if command_exists docker && check_docker_daemon; then
-        docker compose up redis db -d
+        # Try modern docker compose first, fallback to docker-compose
+        if docker compose version >/dev/null 2>&1; then
+            docker compose up -d redis db
+        elif command_exists docker-compose; then
+            docker-compose up -d redis db
+        else
+            echo -e "${RED}❌ Neither 'docker compose' nor 'docker-compose' is available${NC}"
+            return 1
+        fi
+        
         echo -e "${GREEN}✅ Infrastructure started${NC}"
         echo -e "${CYAN}   - PostgreSQL: localhost:5432${NC}"
         echo -e "${CYAN}   - Redis: localhost:6379${NC}"
@@ -496,16 +526,28 @@ show_status() {
     echo ""
     echo -e "${BLUE}Infrastructure:${NC}"
     if command_exists docker && check_docker_daemon >/dev/null 2>&1; then
-        if docker compose ps | grep -q "chitthi_db.*Up"; then
-            echo -e "${GREEN}✅ PostgreSQL running${NC}"
-        else
-            echo -e "${RED}❌ PostgreSQL not running${NC}"
+        # Use appropriate docker compose command
+        local compose_cmd=""
+        if docker compose version >/dev/null 2>&1; then
+            compose_cmd="docker compose"
+        elif command_exists docker-compose; then
+            compose_cmd="docker-compose"
         fi
         
-        if docker compose ps | grep -q "chitthi_redis.*Up"; then
-            echo -e "${GREEN}✅ Redis running${NC}"
+        if [[ -n "$compose_cmd" ]]; then
+            if $compose_cmd ps | grep -q "chitthi_db.*Up"; then
+                echo -e "${GREEN}✅ PostgreSQL running${NC}"
+            else
+                echo -e "${RED}❌ PostgreSQL not running${NC}"
+            fi
+            
+            if $compose_cmd ps | grep -q "chitthi_redis.*Up"; then
+                echo -e "${GREEN}✅ Redis running${NC}"
+            else
+                echo -e "${RED}❌ Redis not running${NC}"
+            fi
         else
-            echo -e "${RED}❌ Redis not running${NC}"
+            echo -e "${RED}❌ Docker Compose not available${NC}"
         fi
     else
         echo -e "${RED}❌ Docker not available or not running${NC}"
