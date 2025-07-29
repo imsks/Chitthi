@@ -173,13 +173,38 @@ install_docker() {
 install_air() {
     if ! command_exists air; then
         echo -e "${YELLOW}📦 Installing Air for Go hot reloading...${NC}"
-        go install github.com/cosmtrek/air@latest
+        
+        # Try the modern go install method first
+        if go install github.com/cosmtrek/air@latest 2>/dev/null; then
+            echo -e "${GREEN}✅ Air installed successfully using go install${NC}"
+        else
+            # Fallback to curl installation method
+            echo -e "${YELLOW}⚠️  go install failed, trying curl installation...${NC}"
+            case $OS in
+                "macos"|"linux")
+                    curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+                    ;;
+                "windows")
+                    echo -e "${YELLOW}⚠️  Please install Air manually: go install github.com/cosmtrek/air@latest${NC}"
+                    return 1
+                    ;;
+            esac
+        fi
         
         # Add GOPATH/bin to PATH if not already there
-        if [[ ":$PATH:" != *":$HOME/go/bin:"* ]]; then
-            echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
-            echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.zshrc 2>/dev/null || true
-            export PATH=$PATH:$HOME/go/bin
+        GOPATH_BIN="$(go env GOPATH)/bin"
+        if [[ ":$PATH:" != *":$GOPATH_BIN:"* ]]; then
+            echo "export PATH=\$PATH:$GOPATH_BIN" >> ~/.bashrc
+            echo "export PATH=\$PATH:$GOPATH_BIN" >> ~/.zshrc 2>/dev/null || true
+            export PATH=$PATH:$GOPATH_BIN
+        fi
+        
+        # Verify installation
+        if command_exists air; then
+            echo -e "${GREEN}✅ Air installed successfully${NC}"
+        else
+            echo -e "${RED}❌ Air installation failed${NC}"
+            return 1
         fi
     else
         echo -e "${GREEN}✅ Air is already installed${NC}"
