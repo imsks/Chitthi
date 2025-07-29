@@ -348,6 +348,15 @@ check_docker_daemon() {
             return 1
         fi
         echo -e "${GREEN}✅ Docker daemon is running${NC}"
+        
+        # Check Docker permissions on Linux
+        if [[ "$OS" == "linux" ]]; then
+            if ! docker ps >/dev/null 2>&1; then
+                echo -e "${YELLOW}⚠️  Docker permission issue detected${NC}"
+                echo -e "${BLUE}💡 Try: sudo usermod -aG docker $USER && newgrp docker${NC}"
+                return 1
+            fi
+        fi
     fi
     return 0
 }
@@ -387,6 +396,43 @@ start_infrastructure() {
                 # Check for common issues and provide solutions
                 if grep -q "unsupported.*version" /tmp/compose_error.log 2>/dev/null; then
                     echo -e "${BLUE}💡 Tip: Try updating Docker Desktop or use 'docker-compose' instead of 'docker compose'${NC}"
+                elif grep -q "http+docker\|URLSchemeUnknown" /tmp/compose_error.log 2>/dev/null; then
+                    echo -e "${BLUE}💡 Docker connection issue detected. Trying fixes...${NC}"
+                    
+                    if [[ "$OS" == "linux" ]]; then
+                        echo -e "${YELLOW}Running Linux-specific Docker fixes:${NC}"
+                        
+                        # Fix 1: Add user to docker group
+                        if ! groups | grep -q docker; then
+                            echo -e "${CYAN}Adding user to docker group...${NC}"
+                            sudo usermod -aG docker $USER
+                        fi
+                        
+                        # Fix 2: Try with sudo (temporary workaround)
+                        echo -e "${CYAN}Trying with sudo as temporary fix...${NC}"
+                        if sudo $compose_cmd up -d redis db; then
+                            echo -e "${GREEN}✅ Infrastructure started with sudo${NC}"
+                            echo -e "${YELLOW}⚠️  Please logout and login again to use Docker without sudo${NC}"
+                            echo -e "${CYAN}   - PostgreSQL: localhost:5432${NC}"
+                            echo -e "${CYAN}   - Redis: localhost:6379${NC}"
+                            rm -f /tmp/compose_error.log
+                            return 0
+                        fi
+                        
+                        # Fix 3: Install newer docker-compose if using old version
+                        echo -e "${CYAN}Installing newer docker-compose...${NC}"
+                        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                        sudo chmod +x /usr/local/bin/docker-compose
+                        
+                        # Try again with new docker-compose
+                        if /usr/local/bin/docker-compose up -d redis db; then
+                            echo -e "${GREEN}✅ Infrastructure started with updated docker-compose${NC}"
+                            echo -e "${CYAN}   - PostgreSQL: localhost:5432${NC}"
+                            echo -e "${CYAN}   - Redis: localhost:6379${NC}"
+                            rm -f /tmp/compose_error.log
+                            return 0
+                        fi
+                    fi
                 fi
                 
                 rm -f /tmp/compose_error.log
@@ -448,6 +494,41 @@ start_frontend() {
     fi
 }
 
+# Function for EC2-specific fixes
+fix_ec2_docker() {
+    echo -e "${PURPLE}🔧 Applying EC2/Linux Docker fixes...${NC}"
+    
+    # Ensure user is in docker group
+    if ! groups | grep -q docker; then
+        echo -e "${CYAN}Adding user to docker group...${NC}"
+        sudo usermod -aG docker $USER
+    fi
+    
+    # Start Docker service if not running
+    if ! systemctl is-active --quiet docker; then
+        echo -e "${CYAN}Starting Docker service...${NC}"
+        sudo systemctl start docker
+        sudo systemctl enable docker
+    fi
+    
+    # Fix Docker socket permissions
+    echo -e "${CYAN}Fixing Docker socket permissions...${NC}"
+    sudo chmod 666 /var/run/docker.sock
+    
+    # Install/update docker-compose
+    echo -e "${CYAN}Installing latest docker-compose...${NC}"
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+    
+    # Create symlink if needed
+    if [[ ! -f "/usr/bin/docker-compose" ]]; then
+        sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+    fi
+    
+    echo -e "${GREEN}✅ EC2 Docker fixes applied${NC}"
+    echo -e "${YELLOW}⚠️  Please run 'newgrp docker' or logout/login to apply group changes${NC}"
+}
+
 # Function for full automated setup
 full_setup() {
     echo -e "${PURPLE}🎯 Running full automated setup...${NC}"
@@ -460,6 +541,11 @@ full_setup() {
     install_nodejs
     install_docker
     install_air
+    
+    # Apply EC2 fixes if on Linux
+    if [[ "$OS" == "linux" ]]; then
+        fix_ec2_docker
+    fi
     
     # Setup environment
     create_env_file
@@ -522,10 +608,11 @@ show_menu() {
     echo "7)  Start web frontend"
     echo "8)  Start both backend and frontend"
     echo "9)  Full automated setup"
-    echo "10) Show project status"
-    echo "11) Exit"
+    echo "10) Fix EC2/Linux Docker issues"
+    echo "11) Show project status"
+    echo "12) Exit"
     echo ""
-    read -p "Enter your choice (1-11): " choice
+    read -p "Enter your choice (1-12): " choice
 }
 
 # Function to show project status
@@ -634,9 +721,12 @@ handle_choice() {
             full_setup
             ;;
         10)
-            show_status
+            fix_ec2_docker
             ;;
         11)
+            show_status
+            ;;
+        12)
             echo -e "${GREEN}Goodbye! 👋${NC}"
             exit 0
             ;;
@@ -689,6 +779,9 @@ main() {
             "full"|"setup"|"init")
                 full_setup
                 ;;
+            "ec2"|"fix-ec2"|"fix-docker")
+                fix_ec2_docker
+                ;;
             "status"|"info")
                 show_status
                 ;;
@@ -706,11 +799,13 @@ main() {
                 echo "  backend        - Start Go backend"
                 echo "  frontend       - Start web frontend"
                 echo "  full           - Run full automated setup"
+                echo "  ec2            - Fix EC2/Linux Docker issues"
                 echo "  status         - Show project status"
                 echo "  help           - Show this help message"
                 echo ""
                 echo -e "${PURPLE}Examples:${NC}"
                 echo "  $0 full        # Complete automated setup"
+                echo "  $0 ec2         # Fix Docker issues on EC2/Linux"
                 echo "  $0 backend     # Start backend server"
                 echo "  $0 frontend    # Start frontend server"
                 echo "  $0 status      # Check project status"
