@@ -14,6 +14,11 @@ type BreevoAdapter struct {
 }
 
 func (b *BreevoAdapter) SendEmail(email model.EmailRequest) error {
+	// Validate the email request
+	if email.FromName == "" || email.ToName == "" {
+		return fmt.Errorf("invalid email request: from_name and to_name are required")
+	}
+
 	payload := map[string]interface{}{
 		"sender": map[string]string{
 			"name":  email.FromName,
