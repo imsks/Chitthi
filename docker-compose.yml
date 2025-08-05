@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.3"
 
 services:
     app:
@@ -23,7 +23,7 @@ services:
         image: redis:7
         container_name: chitthi_redis
         ports:
-            - "6379:6379"
+            - "6543:6543"
         volumes:
             - redis_data:/data
         restart: unless-stopped

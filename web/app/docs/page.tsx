@@ -1055,7 +1055,7 @@ PORT=8080
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable
 
 # Redis Configuration
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://localhost:6543
 
 # Email Provider Configuration (Optional - for fallback)
 BREEVO_API_KEY=your_breevo_api_key
@@ -1127,7 +1127,7 @@ SMTP_USE_TLS=true`}
                                                         id='redis-setup'
                                                         code={`docker run -d \\
   --name chitthi-redis \\
-  -p 6379:6379 \\
+  -p 6543:6543 \\
   redis:7-alpine`}
                                                     />
                                                 </div>
