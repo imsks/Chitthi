@@ -9,6 +9,7 @@ import (
 
 	"github.com/imsks/chitthi/internal/config"
 	"github.com/imsks/chitthi/internal/database"
+	"github.com/imsks/chitthi/internal/middleware"
 	"github.com/imsks/chitthi/internal/modules/email"
 )
 
@@ -34,13 +35,13 @@ func main() {
 	emailService := email.NewService(cfg)
 	emailHandler := email.NewHandler(emailService)
 
-	// Setup routes
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// Setup routes with CORS middleware
+	http.HandleFunc("/", middleware.CORSHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf("📮 Welcome to Chitthi %s - BYOK Email Delivery Service", Version)))
-	})
+	}))
 
 	// Version endpoint
-	http.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/version", middleware.CORSHandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		response := VersionResponse{
 			Version:   Version,
@@ -49,11 +50,11 @@ func main() {
 			Timestamp: fmt.Sprintf("%d", time.Now().Unix()),
 		}
 		json.NewEncoder(w).Encode(response)
-	})
+	}))
 
-	// Email module routes
-	http.HandleFunc("/send-email", emailHandler.SendEmail)
-	http.HandleFunc("/email-logs", emailHandler.GetLogs)
+	// Email module routes with CORS middleware
+	http.HandleFunc("/send-email", middleware.CORSHandlerFunc(emailHandler.SendEmail))
+	http.HandleFunc("/email-logs", middleware.CORSHandlerFunc(emailHandler.GetLogs))
 
 	addr := ":" + cfg.Port
 	log.Printf("🚀 Chitthi %s running on http://localhost%s", Version, addr)
