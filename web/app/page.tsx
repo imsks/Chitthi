@@ -506,7 +506,7 @@ export default function Home() {
                             variant='outline'
                             className='border-gray-300 hover:bg-gray-50'>
                             <a
-                                href='https://github.com/imsks/chitthi/blob/main/CONTRIBUTING.md'
+                                href='https://github.com/imsks/chitthi/blob/production/CONTRIBUTING.md'
                                 target='_blank'
                                 rel='noopener noreferrer'>
                                 View Contributing Guide
