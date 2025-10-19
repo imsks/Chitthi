@@ -52,7 +52,8 @@ export default function DocsPage() {
     const sidebarItems = [
         { id: "overview", label: "Overview", icon: Book },
         { id: "quick-start", label: "Quick Start", icon: Zap },
-        { id: "api", label: "API Reference", icon: Code },
+        // TODO: Add API Ref in future
+        // { id: "api", label: "API Reference", icon: Code },
         { id: "providers", label: "Email Providers", icon: Globe },
         { id: "configuration", label: "Configuration", icon: Settings },
         { id: "deployment", label: "Deployment", icon: Database }
@@ -427,7 +428,7 @@ go run cmd/main.go`}
                                         </h3>
                                         <CodeBlock
                                             id='test-api'
-                                            code={`curl -X POST https://chitthi-development.up.railway.app/send-email \\
+                                            code={`curl -X POST https://localhost:8000/send-email \\
   -H "Content-Type: application/json" \\
   -H "X-SMTP-Host: smtp.gmail.com" \\
   -H "X-SMTP-Port: 587" \\
@@ -457,7 +458,7 @@ go run cmd/main.go`}
                                                     Your Chitthi email service
                                                     is now running on{" "}
                                                     <code className='bg-green-200 px-1 rounded'>
-                                                        https://chitthi-development.up.railway.app
+                                                        https://YOUR_APP.up.railway.app
                                                     </code>
                                                 </p>
                                             </div>
@@ -485,7 +486,7 @@ go run cmd/main.go`}
                                     </CardHeader>
                                     <CardContent>
                                         <code className='bg-gray-100 px-3 py-1 rounded text-sm'>
-                                            https://chitthi-development.up.railway.app
+                                            https://YOUR_APP.up.railway.app
                                         </code>
                                     </CardContent>
                                 </Card>
@@ -817,7 +818,7 @@ go run cmd/main.go`}
                                                         </h4>
                                                         <CodeBlock
                                                             id='smtp-example'
-                                                            code={`curl -X POST https://chitthi-development.up.railway.app/send-email \\
+                                                            code={`curl -X POST https://YOUR_APP.up.railway.app/send-email \\
   -H "Content-Type: application/json" \\
   -H "X-SMTP-Host: smtp.gmail.com" \\
   -H "X-SMTP-Port: 587" \\
@@ -869,7 +870,7 @@ go run cmd/main.go`}
                                                         </h4>
                                                         <CodeBlock
                                                             id='sendgrid-example'
-                                                            code={`curl -X POST https://chitthi-development.up.railway.app/send-email \\
+                                                            code={`curl -X POST https://YOUR_APP.up.railway.app/send-email \\
   -H "Content-Type: application/json" \\
   -H "X-SendGrid-API-Key: your-sendgrid-api-key" \\
   -d '{
@@ -916,7 +917,7 @@ go run cmd/main.go`}
                                                         </h4>
                                                         <CodeBlock
                                                             id='breevo-example'
-                                                            code={`curl -X POST https://chitthi-development.up.railway.app/send-email \\
+                                                            code={`curl -X POST https://YOUR_APP.up.railway.app/send-email \\
   -H "Content-Type: application/json" \\
   -H "X-Breevo-API-Key: your-breevo-api-key" \\
   -d '{
@@ -963,7 +964,7 @@ go run cmd/main.go`}
                                                         </h4>
                                                         <CodeBlock
                                                             id='mailersend-example'
-                                                            code={`curl -X POST https://chitthi-development.up.railway.app/send-email \\
+                                                            code={`curl -X POST https://YOUR_APP.up.railway.app/send-email \\
   -H "Content-Type: application/json" \\
   -H "X-MailerSend-API-Key: your-mailersend-api-key" \\
   -d '{

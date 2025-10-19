@@ -115,9 +115,9 @@ export default function Home() {
                         </Badge>
 
                         <h1 className='text-4xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight'>
-                            <span className='block'>Lightweight Email</span>
+                            <span className='block'>Send emails without limits.</span>
                             <span className='bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>
-                                Microservice
+                            Self-hosted. Dev-friendly.
                             </span>
                         </h1>
 
@@ -236,7 +236,7 @@ export default function Home() {
                             },
                             {
                                 icon: Zap,
-                                title: "Smart Routing",
+                                title: "Smart Routing(Coming soon)",
                                 description:
                                     "Intelligent provider detection based on credentials with fallback mechanisms.",
                                 color: "text-yellow-600",
@@ -252,7 +252,7 @@ export default function Home() {
                             },
                             {
                                 icon: TrendingUp,
-                                title: "Redis Caching",
+                                title: "Redis Caching(Coming soon)",
                                 description:
                                     "Performance optimization with Redis caching for improved response times.",
                                 color: "text-red-600",
@@ -377,7 +377,7 @@ export default function Home() {
                                     </CardHeader>
                                     <CardContent className='pt-0'>
                                         <pre className='text-sm overflow-x-auto'>
-                                            <code>{`curl -X POST https://chitthi-development.up.railway.app/send-email \\
+                                            <code>{`curl -X POST https://localhost:8000/send-email \\
   -H "Content-Type: application/json" \\
   -H "X-SMTP-Host: smtp.gmail.com" \\
   -H "X-SMTP-Username: your-email@gmail.com" \\
@@ -394,6 +394,126 @@ export default function Home() {
                             </motion.div>
                         </motion.div>
                     </div>
+                </div>
+            </section>
+
+            {/* Contribute Section */}
+            <section id='contribute' className='py-20 bg-white'>
+                <div className='container mx-auto px-4'>
+                    <motion.div className='text-center mb-16' {...fadeInUp}>
+                        <Badge className='mb-4 bg-green-100 text-green-800'>
+                            Join the Community
+                        </Badge>
+                        <h2 className='text-3xl lg:text-4xl font-bold text-gray-900 mb-4'>
+                            Contribute to Chitthi
+                        </h2>
+                        <p className='text-xl text-gray-600 max-w-2xl mx-auto'>
+                            Help us build the best open-source email service.
+                            Every contribution makes a difference!
+                        </p>
+                    </motion.div>
+
+                    <motion.div
+                        className='grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto'
+                        variants={staggerChildren}
+                        initial='initial'
+                        whileInView='animate'
+                        viewport={{ once: true }}>
+                        {[
+                            {
+                                icon: Code,
+                                title: "Code Contributions",
+                                description:
+                                    "Submit pull requests for bug fixes, new features, or improvements to the codebase.",
+                                link: "https://github.com/imsks/chitthi/pulls",
+                                linkText: "Create PR",
+                                color: "text-blue-600",
+                                bgColor: "bg-blue-50"
+                            },
+                            {
+                                icon: GitBranch,
+                                title: "Report Issues",
+                                description:
+                                    "Found a bug or have a feature request? Let us know by opening an issue.",
+                                link: "https://github.com/imsks/chitthi/issues",
+                                linkText: "Open Issue",
+                                color: "text-red-600",
+                                bgColor: "bg-red-50"
+                            },
+                            {
+                                icon: Users,
+                                title: "Join Discussions",
+                                description:
+                                    "Share ideas, ask questions, and engage with the community in our discussions.",
+                                link: "https://github.com/imsks/chitthi/discussions",
+                                linkText: "Start Discussion",
+                                color: "text-purple-600",
+                                bgColor: "bg-purple-50"
+                            },
+                            {
+                                icon: Star,
+                                title: "Star & Share",
+                                description:
+                                    "Show your support by starring the repo and sharing Chitthi with others.",
+                                link: "https://github.com/imsks/chitthi",
+                                linkText: "Star on GitHub",
+                                color: "text-yellow-600",
+                                bgColor: "bg-yellow-50"
+                            }
+                        ].map((item, index) => (
+                            <motion.div key={index} variants={fadeInUp}>
+                                <Card className='h-full hover:shadow-lg transition-all duration-300 border-0 shadow-sm group'>
+                                    <CardHeader className='pb-4'>
+                                        <div
+                                            className={`w-12 h-12 rounded-lg ${item.bgColor} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                                            <item.icon
+                                                className={`w-6 h-6 ${item.color}`}
+                                            />
+                                        </div>
+                                        <CardTitle className='text-lg font-semibold'>
+                                            {item.title}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className='space-y-4'>
+                                        <CardDescription className='text-gray-600 text-sm leading-relaxed'>
+                                            {item.description}
+                                        </CardDescription>
+                                        <a
+                                            href={item.link}
+                                            target='_blank'
+                                            rel='noopener noreferrer'
+                                            className={`inline-flex items-center text-sm font-medium ${item.color} hover:underline`}>
+                                            {item.linkText}
+                                            <ArrowRight className='ml-1 w-4 h-4' />
+                                        </a>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+
+                    <motion.div
+                        className='mt-12 text-center'
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.4 }}
+                        viewport={{ once: true }}>
+                        <p className='text-gray-600 mb-4'>
+                            Check out our contributing guidelines to get started
+                        </p>
+                        <Button
+                            asChild
+                            variant='outline'
+                            className='border-gray-300 hover:bg-gray-50'>
+                            <a
+                                href='https://github.com/imsks/chitthi/blob/main/CONTRIBUTING.md'
+                                target='_blank'
+                                rel='noopener noreferrer'>
+                                View Contributing Guide
+                                <ArrowRight className='ml-2 w-4 h-4' />
+                            </a>
+                        </Button>
+                    </motion.div>
                 </div>
             </section>
 
@@ -426,7 +546,8 @@ export default function Home() {
                                 asChild
                                 variant='outline'
                                 size='lg'
-                                className='text-white border-white/30 hover:bg-white/10 text-lg px-8'>
+                                className='bg-white text-blue-600 hover:bg-gray-100 text-lg px-8'
+                                >
                                 <a
                                     href='https://github.com/imsks/chitthi'
                                     target='_blank'
@@ -459,7 +580,7 @@ export default function Home() {
                                 developers with simple email solutions.
                             </p>
                             <div className='text-sm text-gray-500'>
-                                Built with ❤️ by Sachin in 🇮🇳
+                                Built with ❤️ by <a href="https://github.com/imsks" target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">Sachin</a> in 🇮🇳
                             </div>
                         </div>
 
@@ -507,7 +628,7 @@ export default function Home() {
                     </div>
 
                     <div className='border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-500'>
-                        © 2024 Chitthi. Licensed under the MIT License.
+                        © {new Date().getFullYear()} Chitthi. Licensed under the MIT License.
                     </div>
                 </div>
             </footer>
