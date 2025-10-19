@@ -115,9 +115,9 @@ export default function Home() {
                         </Badge>
 
                         <h1 className='text-4xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight'>
-                            <span className='block'>Lightweight Email</span>
+                            <span className='block'>Send emails without limits.</span>
                             <span className='bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>
-                                Microservice
+                            Self-hosted. Dev-friendly.
                             </span>
                         </h1>
 
@@ -236,7 +236,7 @@ export default function Home() {
                             },
                             {
                                 icon: Zap,
-                                title: "Smart Routing",
+                                title: "Smart Routing(Coming soon)",
                                 description:
                                     "Intelligent provider detection based on credentials with fallback mechanisms.",
                                 color: "text-yellow-600",
@@ -252,7 +252,7 @@ export default function Home() {
                             },
                             {
                                 icon: TrendingUp,
-                                title: "Redis Caching",
+                                title: "Redis Caching(Coming soon)",
                                 description:
                                     "Performance optimization with Redis caching for improved response times.",
                                 color: "text-red-600",
@@ -377,7 +377,7 @@ export default function Home() {
                                     </CardHeader>
                                     <CardContent className='pt-0'>
                                         <pre className='text-sm overflow-x-auto'>
-                                            <code>{`curl -X POST https://chitthi-development.up.railway.app/send-email \\
+                                            <code>{`curl -X POST https://localhost:8000/send-email \\
   -H "Content-Type: application/json" \\
   -H "X-SMTP-Host: smtp.gmail.com" \\
   -H "X-SMTP-Username: your-email@gmail.com" \\
@@ -426,7 +426,8 @@ export default function Home() {
                                 asChild
                                 variant='outline'
                                 size='lg'
-                                className='text-white border-white/30 hover:bg-white/10 text-lg px-8'>
+                                className='bg-white text-blue-600 hover:bg-gray-100 text-lg px-8'
+                                >
                                 <a
                                     href='https://github.com/imsks/chitthi'
                                     target='_blank'
@@ -459,7 +460,7 @@ export default function Home() {
                                 developers with simple email solutions.
                             </p>
                             <div className='text-sm text-gray-500'>
-                                Built with ❤️ by Sachin in 🇮🇳
+                                Built with ❤️ by <a href="https://github.com/imsks" target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">Sachin</a> in 🇮🇳
                             </div>
                         </div>
 
@@ -507,7 +508,7 @@ export default function Home() {
                     </div>
 
                     <div className='border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-500'>
-                        © 2024 Chitthi. Licensed under the MIT License.
+                        © {new Date().getFullYear()} Chitthi. Licensed under the MIT License.
                     </div>
                 </div>
             </footer>
