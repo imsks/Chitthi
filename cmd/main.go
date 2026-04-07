@@ -30,6 +30,11 @@ func main() {
 		log.Fatal("Failed to initialize database:", err)
 	}
 	defer database.Close()
+	defer database.CloseRedis()
+
+	if err := database.InitRedis(cfg.RedisURL); err != nil {
+		log.Fatal("Failed to initialize Redis:", err)
+	}
 
 	// Initialize services
 	emailService := email.NewService(cfg)
