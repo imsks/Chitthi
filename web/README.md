@@ -33,7 +33,7 @@ Chitthi is a modern email microservice designed for developers who want simplici
 -   **🔄 Multi-Provider**: Support for Breevo, SendGrid, MailerSend, and SMTP
 -   **⚡ Header-based Credentials**: Secure credential management via HTTP headers
 -   **🧠 Smart Routing**: Automatic provider detection based on credentials
--   **📊 Comprehensive Logging**: PostgreSQL-based email tracking and analytics
+-   **📊 Postgres schema**: Users, providers, unified API keys, and daily aggregates (`user_logs`)
 -   **🚀 Production Ready**: Redis caching, error handling, and monitoring
 
 ---
@@ -45,7 +45,7 @@ Chitthi is a modern email microservice designed for developers who want simplici
 -   ✅ **Header-based Credentials**: Secure credential management
 -   ✅ **Automatic Provider Detection**: Smart routing based on credentials
 -   ✅ **Redis Caching**: Performance optimization
--   ✅ **PostgreSQL Logging**: Comprehensive email tracking
+-   ✅ **PostgreSQL**: Unified API keys, providers, and daily user metrics
 -   ✅ **Docker Ready**: Containerized deployment
 -   ✅ **Production Ready**: Error handling, logging, monitoring
 
@@ -73,7 +73,15 @@ cd chitthi
 docker compose up redis db -d
 ```
 
-### 3. Run the Service
+### 3. Run database migrations
+
+Requires [golang-migrate](https://github.com/golang-migrate/migrate) installed. From the repository root (parent of `web/`):
+
+```bash
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up
+```
+
+### 4. Run the Service
 
 ```bash
 # Development with hot reload
@@ -83,7 +91,7 @@ air
 go run cmd/main.go
 ```
 
-### 4. Test the API
+### 5. Test the API
 
 ```bash
 curl -X POST http://localhost:8080/send-email \
@@ -111,7 +119,6 @@ curl -X POST http://localhost:8080/send-email \
 | Method | Endpoint      | Description                 |
 | ------ | ------------- | --------------------------- |
 | `POST` | `/send-email` | Send email via any provider |
-| `GET`  | `/email-logs` | Retrieve email logs         |
 | `GET`  | `/`           | Health check                |
 
 ### Send Email
@@ -149,37 +156,8 @@ curl -X POST http://localhost:8080/send-email \
         "sent_to": "recipient@example.com",
         "sent_from": "sender@example.com",
         "subject": "Email Subject",
-        "provider": "smtp",
-        "log_saved": true,
-        "log_id": 123
+        "provider": "smtp"
     }
-}
-```
-
-### Get Email Logs
-
-**Endpoint**: `GET /email-logs`
-
-**Query Parameters**:
-
--   `limit` (optional): Number of logs to return (default: 10)
--   `offset` (optional): Number of logs to skip (default: 0)
-
-**Response**:
-
-```json
-{
-    "status": true,
-    "data": [
-        {
-            "id": 1,
-            "recipient_email": "recipient@example.com",
-            "subject": "Test Email",
-            "provider": "smtp",
-            "status": "sent",
-            "created_at": "2024-01-01T12:00:00Z"
-        }
-    ]
 }
 ```
 
@@ -320,13 +298,15 @@ go build -o main cmd/main.go
 
 ### Database Migrations
 
+Install [golang-migrate](https://github.com/golang-migrate/migrate) (CLI). Run commands from the repository root (parent of `web/`), not from `web/` itself.
+
 ```bash
-# Run migrations
 migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up
 
-# Rollback migrations
-migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down 1
 ```
+
+Match the connection string to your `DATABASE_URL` when not using localhost.
 
 ---
 

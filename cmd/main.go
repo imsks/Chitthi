@@ -59,7 +59,6 @@ func main() {
 
 	// Email module routes with CORS middleware
 	http.HandleFunc("/send-email", middleware.CORSHandlerFunc(emailHandler.SendEmail))
-	http.HandleFunc("/email-logs", middleware.CORSHandlerFunc(emailHandler.GetLogs))
 
 	addr := ":" + cfg.Port
 	log.Printf("🚀 Chitthi %s running on http://localhost%s", Version, addr)
