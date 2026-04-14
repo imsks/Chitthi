@@ -13,12 +13,3 @@ type EmailRequest struct {
 	SendGridAPIKey   string `json:"sendgrid_api_key,omitempty"`
 	MailerSendAPIKey string `json:"mailersend_api_key,omitempty"`
 }
-
-type EmailLog struct {
-	ID             int    `json:"id"`
-	RecipientEmail string `json:"recipient_email"`
-	Subject        string `json:"subject"`
-	Provider       string `json:"provider"`
-	Status         string `json:"status"`
-	CreatedAt      string `json:"created_at"`
-}

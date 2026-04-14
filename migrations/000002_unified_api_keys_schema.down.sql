@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS user_api_keys;
+DROP TABLE IF EXISTS user_logs;
+DROP TABLE IF EXISTS user_providers;
+DROP TABLE IF EXISTS providers;
+DROP TABLE IF EXISTS users;
+DROP TYPE IF EXISTS provider_name;

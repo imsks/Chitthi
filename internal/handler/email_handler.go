@@ -31,7 +31,6 @@ func SendEmailHandler(w http.ResponseWriter, r *http.Request) {
 		SentFrom: email.FromEmail,
 		Subject:  email.Subject,
 		Provider: email.Provider,
-		LogSaved: false, // Old handler doesn't handle logging
 	}
 
 	utils.SendEmailSuccessResponse(w, emailData)

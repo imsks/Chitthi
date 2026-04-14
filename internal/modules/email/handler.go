@@ -3,7 +3,6 @@ package email
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/imsks/chitthi/internal/utils"
 )
@@ -97,26 +96,4 @@ func extractCredentialsFromHeaders(r *http.Request) map[string]string {
 	}
 
 	return credentials
-}
-
-func (h *Handler) GetLogs(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.SendLogsErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed", "METHOD_NOT_ALLOWED")
-		return
-	}
-
-	limit := 10
-	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
-			limit = l
-		}
-	}
-
-	logs, err := h.service.GetLogs(r.Context(), limit)
-	if err != nil {
-		utils.SendLogsErrorResponse(w, http.StatusInternalServerError, "Failed to fetch logs: "+err.Error(), "LOGS_FETCH_FAILED")
-		return
-	}
-
-	utils.SendLogsSuccessResponse(w, logs)
 }

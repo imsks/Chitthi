@@ -30,6 +30,11 @@ func main() {
 		log.Fatal("Failed to initialize database:", err)
 	}
 	defer database.Close()
+	defer database.CloseRedis()
+
+	if err := database.InitRedis(cfg.RedisURL); err != nil {
+		log.Fatal("Failed to initialize Redis:", err)
+	}
 
 	// Initialize services
 	emailService := email.NewService(cfg)
@@ -54,7 +59,6 @@ func main() {
 
 	// Email module routes with CORS middleware
 	http.HandleFunc("/send-email", middleware.CORSHandlerFunc(emailHandler.SendEmail))
-	http.HandleFunc("/email-logs", middleware.CORSHandlerFunc(emailHandler.GetLogs))
 
 	addr := ":" + cfg.Port
 	log.Printf("🚀 Chitthi %s running on http://localhost%s", Version, addr)

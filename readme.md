@@ -33,7 +33,7 @@ Chitthi is a modern email microservice designed for developers who want simplici
 -   **🔄 Multi-Provider**: Support for Breevo, SendGrid, MailerSend, and SMTP
 -   **⚡ Header-based Credentials**: Secure credential management via HTTP headers
 -   **🧠 Smart Routing**: Automatic provider detection based on credentials
--   **📊 Comprehensive Logging**: PostgreSQL-based email tracking and analytics
+-   **📊 Postgres schema**: Users, providers, unified API keys, and daily aggregates (`user_logs`)
 -   **🚀 Production Ready**: Redis caching, error handling, and monitoring
 
 ---
@@ -45,7 +45,7 @@ Chitthi is a modern email microservice designed for developers who want simplici
 -   ✅ **Header-based Credentials**: Secure credential management
 -   ✅ **Automatic Provider Detection**: Smart routing based on credentials
 -   ✅ **Redis Caching**: Performance optimization
--   ✅ **PostgreSQL Logging**: Comprehensive email tracking
+-   ✅ **PostgreSQL**: Unified API keys, providers, and daily user metrics
 -   ✅ **Docker Ready**: Containerized deployment
 -   ✅ **Production Ready**: Error handling, logging, monitoring
 
@@ -94,7 +94,15 @@ cd chitthi
 docker compose up redis db -d
 ```
 
-#### 3. Install Web Dependencies
+#### 3. Run database migrations
+
+Requires [golang-migrate](https://github.com/golang-migrate/migrate) installed. From the repo root:
+
+```bash
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up
+```
+
+#### 4. Install Web Dependencies
 
 ```bash
 cd web
@@ -102,7 +110,7 @@ npm install
 cd ..
 ```
 
-#### 4. Run the Services
+#### 5. Run the Services
 
 ```bash
 # Terminal 1: Start Go backend
@@ -113,14 +121,14 @@ cd web
 npm run dev
 ```
 
-#### 5. Access the Applications
+#### 6. Access the Applications
 
 -   **Backend API**: http://localhost:8080
 -   **Web Frontend**: http://localhost:3000
 -   **Documentation**: http://localhost:3000/docs
 -   **Quick Start Guide**: http://localhost:3000/quick-start
 
-#### 6. Test the API
+#### 7. Test the API
 
 ```bash
 curl -X POST http://localhost:8080/send-email \
@@ -148,7 +156,6 @@ curl -X POST http://localhost:8080/send-email \
 | Method | Endpoint      | Description                 |
 | ------ | ------------- | --------------------------- |
 | `POST` | `/send-email` | Send email via any provider |
-| `GET`  | `/email-logs` | Retrieve email logs         |
 | `GET`  | `/`           | Health check                |
 
 ### Send Email
@@ -186,37 +193,8 @@ curl -X POST http://localhost:8080/send-email \
         "sent_to": "recipient@example.com",
         "sent_from": "sender@example.com",
         "subject": "Email Subject",
-        "provider": "smtp",
-        "log_saved": true,
-        "log_id": 123
+        "provider": "smtp"
     }
-}
-```
-
-### Get Email Logs
-
-**Endpoint**: `GET /email-logs`
-
-**Query Parameters**:
-
--   `limit` (optional): Number of logs to return (default: 10)
--   `offset` (optional): Number of logs to skip (default: 0)
-
-**Response**:
-
-```json
-{
-    "status": true,
-    "data": [
-        {
-            "id": 1,
-            "recipient_email": "recipient@example.com",
-            "subject": "Test Email",
-            "provider": "smtp",
-            "status": "sent",
-            "created_at": "2024-01-01T12:00:00Z"
-        }
-    ]
 }
 ```
 
@@ -357,13 +335,19 @@ go build -o main cmd/main.go
 
 ### Database Migrations
 
+Install [golang-migrate](https://github.com/golang-migrate/migrate) (CLI) if you do not have it yet. Ensure PostgreSQL is running and the `chitthi` database exists (for example via `docker compose up db -d`).
+
+From the repository root:
+
 ```bash
-# Run migrations
+# Apply all migrations (users, providers, unified API keys, etc.; legacy per-email `email_logs` is removed in migration 000003)
 migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up
 
-# Rollback migrations
-migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down
+# Roll back one step (repeat to roll back further)
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down 1
 ```
+
+Use the same `postgres://...` connection string as your `DATABASE_URL` when not using localhost (adjust host, user, password, and database name accordingly).
 
 ---
 

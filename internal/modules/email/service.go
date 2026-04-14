@@ -11,7 +11,6 @@ import (
 )
 
 type Service struct {
-	repo      *Repository
 	providers []adapters.EmailProvider // Fallback providers from config
 }
 
@@ -31,7 +30,6 @@ func NewService(cfg config.Config) *Service {
 	}
 
 	return &Service{
-		repo:      NewRepository(),
 		providers: providers,
 	}
 }
@@ -44,7 +42,7 @@ type SendEmailResult struct {
 	EmailData *model.EmailData
 }
 
-func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailResult {
+func (s *Service) SendEmail(_ context.Context, req *EmailRequest) *SendEmailResult {
 	emailReq := model.EmailRequest{
 		FromEmail:   req.FromEmail,
 		FromName:    req.FromName,
@@ -110,7 +108,7 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 			}
 
 			if lastError != nil {
-				s.logEmailAttempt(ctx, req, "all_failed", "failed", lastError)
+				log.Printf("email send failed (fallback): %v", lastError)
 				return &SendEmailResult{
 					Success:  false,
 					Error:    lastError,
@@ -159,7 +157,7 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 			}
 
 			if lastError != nil {
-				s.logEmailAttempt(ctx, req, "all_failed", "failed", lastError)
+				log.Printf("email send failed (header + fallback): %v", lastError)
 				return &SendEmailResult{
 					Success:  false,
 					Error:    lastError,
@@ -194,7 +192,7 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 
 			err = provider.SendEmail(emailReq)
 			if err != nil {
-				s.logEmailAttempt(ctx, req, providerName, "failed", err)
+				log.Printf("email send failed: provider=%s err=%v", providerName, err)
 				return &SendEmailResult{
 					Success:  false,
 					Error:    err,
@@ -210,9 +208,6 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 		}
 	}
 
-	// Email sent successfully, now log it
-	logResult := s.logEmailAttempt(ctx, req, providerName, "sent", nil)
-
 	return &SendEmailResult{
 		Success:  true,
 		Provider: providerName,
@@ -221,47 +216,8 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 			SentFrom: req.FromEmail,
 			Subject:  req.Subject,
 			Provider: providerName,
-			LogSaved: logResult.Success,
-			LogID:    logResult.LogID,
-			LogError: logResult.Error,
 		},
 	}
-}
-
-// LogResult represents the result of logging operation
-type LogResult struct {
-	Success bool
-	LogID   *int
-	Error   string
-}
-
-// logEmailAttempt logs email attempt and returns result without affecting email sending
-func (s *Service) logEmailAttempt(ctx context.Context, req *EmailRequest, provider, status string, emailError error) *LogResult {
-	logEntry := &EmailLog{
-		RecipientEmail: req.ToEmail,
-		Subject:        req.Subject,
-		Provider:       provider,
-		Status:         status,
-	}
-
-	err := s.repo.InsertLog(ctx, logEntry)
-	if err != nil {
-		// Log the error but don't affect email sending
-		log.Printf("⚠️  Failed to log email attempt: %v", err)
-		return &LogResult{
-			Success: false,
-			Error:   err.Error(),
-		}
-	}
-
-	return &LogResult{
-		Success: true,
-		LogID:   &logEntry.ID,
-	}
-}
-
-func (s *Service) GetLogs(ctx context.Context, limit int) ([]EmailLog, error) {
-	return s.repo.GetLogs(ctx, limit)
 }
 
 // getProviderByName finds a provider by name from the available providers

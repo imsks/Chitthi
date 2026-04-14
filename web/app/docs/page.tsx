@@ -594,77 +594,8 @@ go run cmd/main.go`}
     "sent_to": "recipient@example.com",
     "sent_from": "sender@example.com", 
     "subject": "Email Subject",
-    "provider": "smtp",
-    "log_saved": true,
-    "log_id": 123
+    "provider": "smtp"
   }
-}`}
-                                                />
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className='flex items-center'>
-                                                <Badge className='mr-3 bg-blue-100 text-blue-800'>
-                                                    GET
-                                                </Badge>
-                                                Get Email Logs
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Retrieve email delivery logs
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent className='space-y-4'>
-                                            <div>
-                                                <h4 className='font-semibold mb-2'>
-                                                    Endpoint
-                                                </h4>
-                                                <code className='bg-gray-100 px-3 py-1 rounded text-sm'>
-                                                    GET /email-logs
-                                                </code>
-                                            </div>
-
-                                            <div>
-                                                <h4 className='font-semibold mb-2'>
-                                                    Query Parameters
-                                                </h4>
-                                                <div className='space-y-2'>
-                                                    <div>
-                                                        <code>limit</code>{" "}
-                                                        (optional): Number of
-                                                        logs to return (default:
-                                                        10)
-                                                    </div>
-                                                    <div>
-                                                        <code>offset</code>{" "}
-                                                        (optional): Number of
-                                                        logs to skip (default:
-                                                        0)
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <h4 className='font-semibold mb-2'>
-                                                    Response
-                                                </h4>
-                                                <CodeBlock
-                                                    id='email-logs-response'
-                                                    language='json'
-                                                    code={`{
-  "status": true,
-  "data": [
-    {
-      "id": 1,
-      "recipient_email": "recipient@example.com",
-      "subject": "Test Email",
-      "provider": "smtp",
-      "status": "sent",
-      "created_at": "2024-01-01T12:00:00Z"
-    }
-  ]
 }`}
                                                 />
                                             </div>
@@ -1090,8 +1021,9 @@ SMTP_USE_TLS=true`}
                                                         PostgreSQL
                                                     </h4>
                                                     <p className='text-sm text-gray-600 mb-2'>
-                                                        Used for email logging
-                                                        and analytics
+                                                        Stores users, providers,
+                                                        unified API keys, and daily
+                                                        metrics
                                                     </p>
                                                     <CodeBlock
                                                         id='postgres-setup'
@@ -1128,7 +1060,7 @@ SMTP_USE_TLS=true`}
                                                         id='redis-setup'
                                                         code={`docker run -d \\
   --name chitthi-redis \\
-  -p 6543:6543 \\
+  -p 6379:6379 \\
   redis:7-alpine`}
                                                     />
                                                 </div>
@@ -1147,8 +1079,24 @@ SMTP_USE_TLS=true`}
                                             the required tables
                                         </CardDescription>
                                     </CardHeader>
-                                    <CardContent>
+                                        <CardContent>
                                         <div className='space-y-4'>
+                                            <p className='text-sm text-gray-600'>
+                                                Install the{" "}
+                                                <a
+                                                    href='https://github.com/golang-migrate/migrate'
+                                                    className='text-blue-600 underline'
+                                                    target='_blank'
+                                                    rel='noopener noreferrer'>
+                                                    golang-migrate
+                                                </a>{" "}
+                                                CLI. Run from the repository root
+                                                (not from{" "}
+                                                <code className='bg-gray-100 px-1 rounded'>
+                                                    web/
+                                                </code>
+                                                ).
+                                            </p>
                                             <div>
                                                 <h4 className='font-semibold mb-2'>
                                                     Run Migrations
@@ -1161,11 +1109,11 @@ SMTP_USE_TLS=true`}
 
                                             <div>
                                                 <h4 className='font-semibold mb-2'>
-                                                    Rollback Migrations
+                                                    Rollback One Step
                                                 </h4>
                                                 <CodeBlock
                                                     id='rollback-migrations'
-                                                    code={`migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down`}
+                                                    code={`migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down 1`}
                                                 />
                                             </div>
                                         </div>
