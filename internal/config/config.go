@@ -8,6 +8,8 @@ import (
 )
 
 type Config struct {
+	JWTSecret        string
+	ApplicationName  string
 	Port             string
 	RabbitMQURL      string
 	RedisURL         string
@@ -39,6 +41,8 @@ func LoadConfig() Config {
 	}
 
 	return Config{
+		JWTSecret:        getEnv("JWT_SECRET", "your-secret-key"),
+		ApplicationName:  getEnv("APPLICATION_NAME", "chitthi"),
 		Port:             getEnv("PORT", "8080"),
 		RabbitMQURL:      getEnv("RABBITMQ_URL", ""),
 		RedisURL:         getEnv("REDIS_URL", ""),
