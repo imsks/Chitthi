@@ -1,0 +1,51 @@
+package services
+
+import (
+	"context"
+	"crypto/rand"
+	"fmt"
+
+	"github.com/imsks/chitthi/internal/database/postgres"
+)
+
+type APIKeyService interface {
+	CreateAPIKey(userID uint) (string, error)
+	GetAPIKeys(userID uint) ([]string, error)
+	DeleteAPIKey(userID uint, apiKey string) error
+}
+
+type APIKeyServiceImpl struct {
+	// You can add dependencies like database connection here
+	apiKeyDAO *postgres.APIKeyDAO
+}
+
+func NewAPIKeyService(apiKeyDAO *postgres.APIKeyDAO) *APIKeyServiceImpl {
+	return &APIKeyServiceImpl{apiKeyDAO: apiKeyDAO}
+}
+
+func (s *APIKeyServiceImpl) CreateAPIKey(userID uint) (string, error) {
+	// Implement logic to generate a random API key, store it in the database with association to userID, and return it
+	// For example:
+	apiKey := generateRandomAPIKey() // Implement this function to generate a secure random API key
+	_, err := s.apiKeyDAO.CreateAPIKey(context.Background(), userID, apiKey)
+	if err != nil {
+		return "", err
+	}
+	return apiKey, nil
+}
+
+func generateRandomAPIKey() string {
+	// Implement a secure random API key generator, for example using crypto/rand
+	key := make([]byte, 32) // 256-bit key
+	_, err := rand.Read(key)
+	if err != nil {
+		// Handle error
+		return ""
+	}
+	return fmt.Sprintf("%x", key) // Return the key as a hex string
+}
+
+func (s *APIKeyServiceImpl) GetAPIKeys(userID uint) ([]string, error) {
+	// Implement logic to fetch all API keys for a given user from the database
+	return s.apiKeyDAO.GetAPIKeys(context.Background(), userID)
+}
