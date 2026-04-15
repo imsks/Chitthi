@@ -16,11 +16,12 @@ type APIKeyService interface {
 
 type APIKeyServiceImpl struct {
 	// You can add dependencies like database connection here
-	apiKeyDAO *postgres.APIKeyDAO
+	apiKeyDAO         *postgres.APIKeyDAO
+	providerApiKeyDAO *postgres.ProviderAPIKeysDAO
 }
 
-func NewAPIKeyService(apiKeyDAO *postgres.APIKeyDAO) *APIKeyServiceImpl {
-	return &APIKeyServiceImpl{apiKeyDAO: apiKeyDAO}
+func NewAPIKeyService(apiKeyDAO *postgres.APIKeyDAO, providerApiKeyDAO *postgres.ProviderAPIKeysDAO) *APIKeyServiceImpl {
+	return &APIKeyServiceImpl{apiKeyDAO: apiKeyDAO, providerApiKeyDAO: providerApiKeyDAO}
 }
 
 func (s *APIKeyServiceImpl) CreateAPIKey(userID uint) (string, error) {
@@ -30,6 +31,25 @@ func (s *APIKeyServiceImpl) CreateAPIKey(userID uint) (string, error) {
 	_, err := s.apiKeyDAO.CreateAPIKey(context.Background(), userID, apiKey)
 	if err != nil {
 		return "", err
+	}
+	return apiKey, nil
+}
+
+func (s *APIKeyServiceImpl) AddProviderAPIKey(ctx context.Context, userID uint, provider string, apiKey string) error {
+	// Implement logic to associate the provided API key with the user's account in the database
+	_, err := s.providerApiKeyDAO.AddProviderAPIKey(ctx, userID, provider, apiKey)
+	return err
+}
+
+func (s *APIKeyServiceImpl) GetProviderAPIKey(ctx context.Context, userID uint, provider string) (string, error) {
+	// Implement logic to fetch the API key for the given provider and user from the database
+	// validate for empty striung and return error if not found
+	apiKey, err := s.providerApiKeyDAO.GetProviderAPIKeys(ctx, userID, provider)
+	if err != nil {
+		return "", err
+	}
+	if apiKey == "" {
+		return "", fmt.Errorf("no API key found for provider %s", provider)
 	}
 	return apiKey, nil
 }
