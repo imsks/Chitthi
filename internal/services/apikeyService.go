@@ -69,3 +69,9 @@ func (s *APIKeyServiceImpl) GetAPIKeys(userID uint) ([]string, error) {
 	// Implement logic to fetch all API keys for a given user from the database
 	return s.apiKeyDAO.GetAPIKeys(context.Background(), userID)
 }
+
+func (s *APIKeyServiceImpl) DeleteAPIKey(userID uint, apiKey string) error {
+	// Implement logic to delete the specified API key for the user from the database
+	// You can add a method in your APIKeyDAO to handle this operation
+	return nil // Replace with actual implementation
+}

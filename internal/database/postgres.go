@@ -4,31 +4,24 @@ import (
 	"context"
 	"log"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 	_ "github.com/lib/pq"
 )
 
-var Pool *pgxpool.Pool
-
-func InitPostgres(dsn string) error {
-	config, err := pgxpool.ParseConfig(dsn)
+func InitPostgres(dsn string) (*pgx.Conn, error) {
+	log.Println("dsn", dsn)
+	conn, err := pgx.Connect(context.Background(), dsn)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
-	if err != nil {
-		return err
-	}
-
-	Pool = pool
 	log.Println("✅ Connected to PostgreSQL")
-	return nil
+	return conn, nil
 }
 
-func Close() {
-	if Pool != nil {
-		Pool.Close()
+func Close(conn *pgx.Conn) {
+	if conn != nil {
+		conn.Close(context.Background())
 		log.Println("🔌 Closed PostgreSQL connection")
 	}
 }

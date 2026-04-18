@@ -9,6 +9,7 @@ import (
 
 	"github.com/imsks/chitthi/internal/config"
 	"github.com/imsks/chitthi/internal/database"
+	router "github.com/imsks/chitthi/internal/http"
 	"github.com/imsks/chitthi/internal/middleware"
 	"github.com/imsks/chitthi/internal/modules/email"
 )
@@ -26,17 +27,21 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// Initialize database
-	if err := database.InitPostgres(cfg.DatabaseURL); err != nil {
+	conn, err := database.InitPostgres(cfg.DatabaseURL)
+	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
-	defer database.Close()
-	defer database.CloseRedis()
-
-	if err := database.InitRedis(cfg.RedisURL); err != nil {
+	err = database.InitRedis(cfg.RedisURL)
+	if err != nil {
 		log.Fatal("Failed to initialize Redis:", err)
 	}
 
-	// Initialize services
+	defer database.Close(conn)
+	defer database.CloseRedis()
+
+	router := router.SetupRouter(&cfg, conn)
+
+	//Initialize services
 	emailService := email.NewService(cfg)
 	emailHandler := email.NewHandler(emailService)
 
@@ -60,7 +65,8 @@ func main() {
 	// Email module routes with CORS middleware
 	http.HandleFunc("/send-email", middleware.CORSHandlerFunc(emailHandler.SendEmail))
 
+	// Start the server
 	addr := ":" + cfg.Port
 	log.Printf("🚀 Chitthi %s running on http://localhost%s", Version, addr)
-	log.Fatal(http.ListenAndServe(addr, nil))
+	log.Fatal(http.ListenAndServe(addr, router))
 }
