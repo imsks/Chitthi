@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,6 +37,7 @@ func (h *AuthHandler) LoginHandler(c *gin.Context) {
 	// Look up user in DB and verify password
 	user, err := h.userService.Authenticate(loginReq.Email, loginReq.Password)
 	if err != nil {
+		log.Println("Authentication failed:", err)
 		c.JSON(401, gin.H{"error": "invalid credentials"})
 		return
 	}
@@ -57,28 +59,28 @@ func (h *AuthHandler) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	// 4. Return token to client (e.g., in JSON or a secure cookie)
-	c.JSON(200, gin.H{"token": tokenString})
-}
+	c.SetCookie("jwt", tokenString, 3600*24, "/", "", false, true)
 
-func (h *AuthHandler) LogoutHandler(c *gin.Context) {
-	// For JWT, logout is typically handled client-side by deleting the token.
-	// Optionally, you can implement token blacklisting on the server side.
-	// not blacklisting can be implemented later by storing in redis with TTL.
-	c.JSON(200, gin.H{"message": "logged out successfully"})
+	// 4. Return token to client (e.g., in JSON or a secure cookie)
+	c.JSON(200, gin.H{"logged_in": true})
 }
 
 func (h *AuthHandler) SignupHandler(c *gin.Context) {
-	var user model.User
+	var signupReq SignupRequest
 
-	if err := c.ShouldBindJSON(&user); err != nil {
+	if err := c.ShouldBindJSON(&signupReq); err != nil {
 		c.JSON(400, gin.H{"error": "invalid request"})
 		return
 	}
-
-	password := c.PostForm("password")
-	createdUser, err := h.userService.CreateUser(c.Request.Context(), user, password)
+	user := model.User{
+		Name:        signupReq.Name,
+		Email:       signupReq.Email,
+		Profession:  &signupReq.Profession,
+		IsOnboarded: false,
+	}
+	createdUser, err := h.userService.CreateUser(c.Request.Context(), user, signupReq.Password)
 	if err != nil {
+		log.Println("Error creating user:", err)
 		c.JSON(500, gin.H{"error": "failed to create user"})
 		return
 	}

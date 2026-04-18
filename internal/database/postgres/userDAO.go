@@ -2,9 +2,11 @@ package postgres
 
 import (
 	"context"
+	"log"
 
 	"github.com/imsks/chitthi/internal/model"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserDAO struct {
@@ -43,9 +45,11 @@ func (dao *UserDAO) ValidateUserCredentials(ctx context.Context, email, hashedPa
 		return nil, err
 	}
 
-	// Compare the provided password hash with the stored hash
-	if passwordHash != hashedPassword {
-		return nil, pgx.ErrNoRows // or a custom error indicating invalid credentials
+	log.Println("fetched user:", user)
+
+	// Compare the provided plain password against the stored bcrypt hash
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(hashedPassword)); err != nil {
+		return nil, pgx.ErrNoRows
 	}
 
 	return &user, nil

@@ -36,6 +36,8 @@ func SetupRouter(cfg *config.Config, conn *pgx.Conn) *gin.Engine {
 	{
 		authGroup.POST("/apikeys", apiKeyHandler.CreateAPIKeyHandler)
 		authGroup.POST("/apikeys/provider", apiKeyHandler.AddProviderAPIKeyHandler)
+		authGroup.GET("/apikeys", apiKeyHandler.GetAPIKeysHandler)
+		authGroup.DELETE("/apikeys/:api_key", apiKeyHandler.DeleteAPIKeyHandler)
 	}
 
 	return router

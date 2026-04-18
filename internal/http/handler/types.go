@@ -16,3 +16,10 @@ type AddProviderAPIKeyRequest struct {
 	Provider string `json:"provider"`
 	APIKey   string `json:"api_key"`
 }
+
+type SignupRequest struct {
+	Name       string `json:"name"`
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	Profession string `json:"profession"`
+}
