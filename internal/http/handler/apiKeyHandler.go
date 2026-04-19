@@ -12,6 +12,7 @@ type APIKeyService interface {
 	GetAPIKeys(userID uint) ([]string, error)
 	DeleteAPIKey(userID uint, apiKey string) error
 	AddProviderAPIKey(ctx context.Context, userID uint, provider string, apiKey string) error
+	GetProviderAPIKeys(ctx context.Context, userID uint) ([]string, error)
 }
 
 type APIKeyHandler struct {
@@ -30,11 +31,7 @@ func (h *APIKeyHandler) CreateAPIKeyHandler(c *gin.Context) {
 		return
 	}
 
-	expiresAt, exists := c.GetQuery("expiry")
-	if !exists {
-		c.JSON(500, gin.H{"error": "expiresAt is not specified"})
-		return
-	}
+	expiresAt := c.Query("expiry")
 
 	// Implement logic to create API key for the user
 	// For example, generate a random API key, store it in the database with association to userID, and return it to the client
@@ -83,6 +80,18 @@ func (h *APIKeyHandler) GetAPIKeysHandler(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"api_keys": apiKeys})
+}
+
+func (h *APIKeyHandler) GetProviderAPIKeysHandler(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
+	providers, err := h.apiKeyService.GetProviderAPIKeys(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to fetch provider API keys"})
+		return
+	}
+
+	c.JSON(200, gin.H{"providers": providers})
 }
 
 func (h *APIKeyHandler) DeleteAPIKeyHandler(c *gin.Context) {

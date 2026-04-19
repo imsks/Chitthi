@@ -96,6 +96,30 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /api/v1/user/onboarding:
+    post:
+      tags:
+        - Auth
+      summary: Mark the authenticated user as onboarded
+      operationId: updateOnboardingStatus
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Onboarding status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Onboarding status updated successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
   /api/v1/apikeys:
     post:
       tags:

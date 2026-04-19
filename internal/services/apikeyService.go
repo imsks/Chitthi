@@ -19,9 +19,7 @@ func NewAPIKeyService(apiKeyDAO *postgres.APIKeyDAO, providerApiKeyDAO *postgres
 }
 
 func (s *APIKeyServiceImpl) CreateAPIKey(userID uint, expiresAt string) (string, error) {
-	// Implement logic to generate a random API key, store it in the database with association to userID, and return it
-	// For example:
-	apiKey := generateRandomAPIKey() // Implement this function to generate a secure random API key
+	apiKey := generateRandomAPIKey()
 	_, err := s.apiKeyDAO.CreateAPIKey(context.Background(), userID, apiKey, expiresAt)
 	if err != nil {
 		return "", err
@@ -40,8 +38,6 @@ func (s *APIKeyServiceImpl) AddProviderAPIKey(ctx context.Context, userID uint, 
 }
 
 func (s *APIKeyServiceImpl) GetProviderAPIKey(ctx context.Context, userID uint, provider string) (string, error) {
-	// Implement logic to fetch the API key for the given provider and user from the database
-	// validate for empty striung and return error if not found
 	providerID, err := s.providerApiKeyDAO.GetProviderIDByName(ctx, provider)
 	if err != nil {
 		return "", err
@@ -68,12 +64,13 @@ func generateRandomAPIKey() string {
 }
 
 func (s *APIKeyServiceImpl) GetAPIKeys(userID uint) ([]string, error) {
-	// Implement logic to fetch all API keys for a given user from the database
 	return s.apiKeyDAO.GetAPIKeys(context.Background(), userID)
 }
 
+func (s *APIKeyServiceImpl) GetProviderAPIKeys(ctx context.Context, userID uint) ([]string, error) {
+	return s.providerApiKeyDAO.GetConfiguredProviderNames(ctx, userID)
+}
+
 func (s *APIKeyServiceImpl) DeleteAPIKey(userID uint, apiKey string) error {
-	// Implement logic to delete the specified API key for the user from the database
-	// You can add a method in your APIKeyDAO to handle this operation
 	return nil // Replace with actual implementation
 }

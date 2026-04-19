@@ -25,18 +25,23 @@ func SetupRouter(cfg *config.Config, conn *pgx.Conn) *gin.Engine {
 	apiKeyHandler := handler.NewAPIKeyHandler(providerAPIKeysService)
 
 	router := gin.Default()
+	router.Use(middleware.GinCORSMiddleware())
 
 	// Public routes
 	router.POST("/api/v1/auth/login", authHandler.LoginHandler)
+	router.POST("/api/v1/auth/logout", authHandler.LogoutHandler)
 	router.POST("/api/v1/auth/register", authHandler.SignupHandler)
 
 	// Protected routes (require authentication)
 	authGroup := router.Group("/api/v1")
 	authGroup.Use(middleware.AuthMiddleware([]byte(cfg.JWTSecret)))
 	{
+		authGroup.GET("/user/me", authHandler.GetMeHandler)
+		authGroup.POST("/user/onboarding", authHandler.UpdateOnboardingStatusHandler)
 		authGroup.POST("/apikeys", apiKeyHandler.CreateAPIKeyHandler)
 		authGroup.POST("/apikeys/provider", apiKeyHandler.AddProviderAPIKeyHandler)
 		authGroup.GET("/apikeys", apiKeyHandler.GetAPIKeysHandler)
+		authGroup.GET("/apikeys/provider", apiKeyHandler.GetProviderAPIKeysHandler)
 		authGroup.DELETE("/apikeys/:api_key", apiKeyHandler.DeleteAPIKeyHandler)
 	}
 

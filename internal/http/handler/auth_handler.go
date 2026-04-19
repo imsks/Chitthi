@@ -14,6 +14,8 @@ import (
 type UserService interface {
 	Authenticate(email, password string) (*model.User, error)
 	CreateUser(context context.Context, user model.User, password string) (*model.User, error)
+	UpdateOnboardingStatus(ctx context.Context, userID uint, isOnboarded bool) error
+	GetUserByID(ctx context.Context, userID uint) (*model.User, error)
 }
 
 type AuthHandler struct {
@@ -61,8 +63,7 @@ func (h *AuthHandler) LoginHandler(c *gin.Context) {
 
 	c.SetCookie("jwt", tokenString, 3600*24, "/", "", false, true)
 
-	// 4. Return token to client (e.g., in JSON or a secure cookie)
-	c.JSON(200, gin.H{"logged_in": true})
+	c.JSON(200, gin.H{"logged_in": true, "user": user})
 }
 
 func (h *AuthHandler) SignupHandler(c *gin.Context) {
@@ -86,4 +87,37 @@ func (h *AuthHandler) SignupHandler(c *gin.Context) {
 	}
 
 	c.JSON(201, gin.H{"user": createdUser})
+}
+
+func (h *AuthHandler) LogoutHandler(c *gin.Context) {
+	c.SetCookie("jwt", "", -1, "/", "", false, true)
+	c.JSON(200, gin.H{"logged_out": true})
+}
+
+// later we need to move this to a separate handler file like user_handler.go but for now keeping it here.
+func (h *AuthHandler) UpdateOnboardingStatusHandler(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
+	// Implement logic to update the onboarding status of the user in the database
+	err := h.userService.UpdateOnboardingStatus(c.Request.Context(), userID, true)
+	if err != nil {
+		log.Println("Error updating onboarding status:", err)
+		c.JSON(500, gin.H{"error": "failed to update onboarding status"})
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "Onboarding status updated successfully"})
+}
+
+func (h *AuthHandler) GetMeHandler(c *gin.Context) {
+	userID := c.GetUint("user_id")
+
+	user, err := h.userService.GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		log.Println("Error fetching current user:", err)
+		c.JSON(500, gin.H{"error": "failed to fetch user"})
+		return
+	}
+
+	c.JSON(200, gin.H{"user": user})
 }

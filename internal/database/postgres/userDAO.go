@@ -54,3 +54,23 @@ func (dao *UserDAO) ValidateUserCredentials(ctx context.Context, email, hashedPa
 
 	return &user, nil
 }
+
+func (dao *UserDAO) UpdateOnboardingStatus(ctx context.Context, userID uint, isOnboarded bool) error {
+	_, err := dao.conn.Exec(ctx, "UPDATE users SET is_onboarded = $1 WHERE id = $2", isOnboarded, userID)
+	return err
+}
+
+func (dao *UserDAO) GetUserByID(ctx context.Context, userID uint) (*model.User, error) {
+	var user model.User
+	err := dao.conn.QueryRow(
+		ctx,
+		`SELECT id, name, email, is_onboarded, profession, created_at, updated_at
+		 FROM users WHERE id = $1`,
+		userID,
+	).Scan(&user.ID, &user.Name, &user.Email, &user.IsOnboarded, &user.Profession, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}

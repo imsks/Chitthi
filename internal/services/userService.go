@@ -47,6 +47,14 @@ func (s *UserService) CreateUser(ctx context.Context, user model.User, password 
 	return &user, nil
 }
 
+func (s *UserService) UpdateOnboardingStatus(ctx context.Context, userID uint, isOnboarded bool) error {
+	return s.userDAO.UpdateOnboardingStatus(ctx, userID, isOnboarded)
+}
+
+func (s *UserService) GetUserByID(ctx context.Context, userID uint) (*model.User, error) {
+	return s.userDAO.GetUserByID(ctx, userID)
+}
+
 func HashPassword(password string) (string, error) {
 	// Implement password hashing using bcrypt or a similar library
 	// For example, using bcrypt:

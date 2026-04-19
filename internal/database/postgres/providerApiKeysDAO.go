@@ -19,7 +19,7 @@ func (dao *ProviderAPIKeysDAO) AddProviderAPIKey(ctx context.Context, userID uin
 	var apiKeyID int64
 	err := dao.conn.QueryRow(
 		ctx,
-		"INSERT INTO provider_api_keys (user_id, provider_id, api_key) VALUES ($1, $2, $3) RETURNING id",
+		"INSERT INTO provider_api_keys (user_id, provider_id, api_key) VALUES ($1, $2, $3) ON CONFLICT (user_id, provider_id) DO UPDATE SET api_key = EXCLUDED.api_key, updated_at = NOW() RETURNING id",
 		userID, providerID, apiKey,
 	).Scan(&apiKeyID)
 	if err != nil {
@@ -63,4 +63,31 @@ func (dao *ProviderAPIKeysDAO) GetProviderIDByName(ctx context.Context, provider
 		return 0, err
 	}
 	return providerID, nil
+}
+
+func (dao *ProviderAPIKeysDAO) GetConfiguredProviderNames(ctx context.Context, userID uint) ([]string, error) {
+	rows, err := dao.conn.Query(
+		ctx,
+		`SELECT p.name
+		 FROM provider_api_keys pak
+		 JOIN providers p ON pak.provider_id = p.id
+		 WHERE pak.user_id = $1
+		 ORDER BY p.name`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var providers []string
+	for rows.Next() {
+		var provider string
+		if err := rows.Scan(&provider); err != nil {
+			return nil, err
+		}
+		providers = append(providers, provider)
+	}
+
+	return providers, rows.Err()
 }
