@@ -6,8 +6,9 @@ info:
     It supports multiple email providers including Breevo, SendGrid, MailerSend, and SMTP.
 
     ## Authentication
-    Protected routes require a JWT Bearer token obtained from the login endpoint.
-    Include it in the `Authorization` header as: `Bearer <token>`
+    Protected routes accept JWT from either:
+    - HttpOnly `jwt` cookie set by `POST /api/v1/auth/login` (used by web app)
+    - `Authorization: Bearer <token>` header
   version: v1.0.0
   contact:
     name: Chitthi on GitHub
@@ -62,7 +63,7 @@ paths:
     post:
       tags:
         - Auth
-      summary: Log in and obtain a JWT token
+      summary: Log in and start an authenticated session
       operationId: loginUser
       requestBody:
         required: true
@@ -75,16 +76,17 @@ paths:
               password: supersecret
       responses:
         '200':
-          description: Login successful
+          description: Login successful (JWT is set in `jwt` HttpOnly cookie)
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  token:
-                    type: string
-                    description: JWT token valid for 24 hours
-                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  logged_in:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/User'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -96,6 +98,48 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /api/v1/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Log out and clear JWT cookie
+      operationId: logoutUser
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logged_out:
+                    type: boolean
+                    example: true
+
+  /api/v1/user/me:
+    get:
+      tags:
+        - Auth
+      summary: Get authenticated user profile
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
   /api/v1/user/onboarding:
     post:
       tags:
@@ -104,6 +148,7 @@ paths:
       operationId: updateOnboardingStatus
       security:
         - BearerAuth: []
+        - CookieAuth: []
       responses:
         '200':
           description: Onboarding status updated successfully
@@ -128,11 +173,12 @@ paths:
       operationId: createAPIKey
       security:
         - BearerAuth: []
+        - CookieAuth: []
       parameters:
         - name: expiry
           in: query
-          required: true
-          description: Expiry datetime for the API key (RFC3339 format)
+          required: false
+          description: Optional expiry datetime for the API key (RFC3339 format). If omitted, key has no expiry.
           schema:
             type: string
             format: date-time
@@ -161,6 +207,7 @@ paths:
       operationId: getAPIKeys
       security:
         - BearerAuth: []
+        - CookieAuth: []
       responses:
         '200':
           description: List of API keys
@@ -189,6 +236,7 @@ paths:
       operationId: deleteAPIKey
       security:
         - BearerAuth: []
+        - CookieAuth: []
       parameters:
         - name: api_key
           in: path
@@ -223,6 +271,7 @@ paths:
       operationId: addProviderAPIKey
       security:
         - BearerAuth: []
+        - CookieAuth: []
       requestBody:
         required: true
         content:
@@ -245,6 +294,34 @@ paths:
                     example: Provider API key added successfully
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    get:
+      tags:
+        - API Keys
+      summary: List configured provider names for the authenticated user
+      operationId: getProviderAPIKeys
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Configured providers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - breevo
+                      - sendgrid
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -420,7 +497,12 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: JWT token obtained from `POST /api/v1/auth/login`. Expires after 24 hours.
+      description: Optional bearer token path for protected APIs.
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: jwt
+      description: HttpOnly JWT cookie set by `POST /api/v1/auth/login`.
 
   responses:
     BadRequest:
@@ -519,6 +601,7 @@ components:
           description: Email provider name
           enum:
             - sendgrid
+            - mailchimp
             - breevo
             - mailersend
             - smtp
