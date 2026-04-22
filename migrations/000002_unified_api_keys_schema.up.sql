@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS providers (
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS user_providers (
+CREATE TABLE IF NOT EXISTS provider_api_keys (
 	id BIGSERIAL PRIMARY KEY,
 	user_id BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
 	provider_id BIGINT NOT NULL REFERENCES providers (id) ON DELETE CASCADE,
@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS user_providers (
 	UNIQUE (user_id, provider_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_providers_user_id ON user_providers (user_id);
-CREATE INDEX IF NOT EXISTS idx_user_providers_provider_id ON user_providers (provider_id);
+CREATE INDEX IF NOT EXISTS idx_provider_api_keys_user_id ON provider_api_keys (user_id);
+CREATE INDEX IF NOT EXISTS idx_provider_api_keys_provider_id ON provider_api_keys (provider_id);
 
 -- One row per user per calendar day; rates are 0–100 (%).
 CREATE TABLE IF NOT EXISTS user_logs (
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS user_api_keys (
 	user_id BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
 	api_key TEXT NOT NULL UNIQUE,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	revoked_at TIMESTAMPTZ
+	expires_at TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_api_keys_user_id ON user_api_keys (user_id);

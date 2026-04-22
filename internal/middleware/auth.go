@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -10,14 +11,19 @@ import (
 
 func AuthMiddleware(secretKey []byte) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
+		tokenString, _ := c.Cookie("jwt")
+
+		if tokenString == "" {
+			authHeader := c.GetHeader("Authorization")
+			// Remove "Bearer " prefix
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+		if tokenString == "" {
 			c.AbortWithStatusJSON(401, gin.H{"error": "Missing token"})
 			return
 		}
 
-		// Remove "Bearer " prefix
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		log.Println("Token from header/cookie:", tokenString)
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			// Validate the signing method
