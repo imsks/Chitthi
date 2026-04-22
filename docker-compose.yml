@@ -31,11 +31,9 @@ services:
         image: postgres:15
         container_name: chitthi_db
         ports:
-            - "5433:5432"
-        environment:
-            POSTGRES_PASSWORD: postgres
-            POSTGRES_USER: postgres
-            POSTGRES_DB: chitthi
+            - "5432:5432"
+        env_file:
+            - .env
         volumes:
             - postgres_data:/var/lib/postgresql/data
         restart: unless-stopped

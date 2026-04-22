@@ -1,7 +1,7 @@
 # 📬 Chitthi
 
 [![Version](https://img.shields.io/badge/Version-v1.0.0-green.svg)](https://github.com/imsks/chitthi)
-[![Go Version](https://img.shields.io/badge/Go-1.24.3-blue.svg)](https://golang.org)
+[![Go Version](https://img.shields.io/badge/Go-1.25.0-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
 
@@ -55,30 +55,34 @@ Chitthi is a modern email microservice designed for developers who want simplici
 
 ### Prerequisites
 
--   **Docker & Docker Compose**
--   **Go 1.24.3+** (for development)
--   **Node.js 18+** (for web frontend)
+-   **Docker & Docker Compose** (backend API, PostgreSQL, and Redis run in containers)
+-   **Node.js 18+** (for the `web/` frontend; `npm install` runs automatically on first `./dev.sh frontend`)
+-   **Go 1.25+** (only if you run the API on the host with `go run` / `air` instead of Docker)
 -   **Git**
 
-### Option 1: Using the Development Script (Recommended)
+### Option 1: Development script (recommended)
+
+From the repo root, use two terminals:
 
 ```bash
-# Clone the repository
-git clone https://github.com/imsks/chitthi.git
-cd chitthi
+# Terminal 1 — Postgres, Redis, and Go API (Air) via docker-compose.yml
+./dev.sh backend
 
-# Run the development script
-./dev.sh
-
-# Or run specific commands
-./dev.sh full      # Full setup
-./dev.sh infra     # Start infrastructure only
-./dev.sh install   # Install web dependencies
-./dev.sh backend   # Start Go backend
-./dev.sh frontend  # Start web frontend
+# Terminal 2 — Next.js app in ./web
+./dev.sh frontend
 ```
 
-### Option 2: Manual Setup
+Other commands:
+
+```bash
+./dev.sh infra    # only db + redis (detached), for local Go without the app container
+./dev.sh down     # docker compose down
+./dev.sh help     # usage
+```
+
+On first `./dev.sh backend`, if `.env` is missing it is created with `DATABASE_URL` / `REDIS_URL` pointing at Docker service names (`db`, `redis`), which is what the `app` container expects.
+
+### Option 2: Manual setup
 
 #### 1. Clone the Repository
 
@@ -87,41 +91,48 @@ git clone https://github.com/imsks/chitthi.git
 cd chitthi
 ```
 
-#### 2. Start Infrastructure
+#### 2. Start infrastructure
 
 ```bash
-# Start Redis and PostgreSQL
 docker compose up redis db -d
 ```
 
 #### 3. Run database migrations
 
-Requires [golang-migrate](https://github.com/golang-migrate/migrate) installed. From the repo root:
+Requires [golang-migrate](https://github.com/golang-migrate/migrate). From the repo root (Postgres must be reachable on `localhost:5432` when ports are published as in `docker-compose.yml`):
 
 ```bash
 migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up
 ```
 
-#### 4. Install Web Dependencies
+#### 4. Install web dependencies
 
 ```bash
-cd web
-npm install
-cd ..
+cd web && npm install && cd ..
 ```
 
-#### 5. Run the Services
+#### 5. Run the services
+
+**API in Docker (matches `./dev.sh backend`):**
 
 ```bash
-# Terminal 1: Start Go backend
+docker compose up --build app
+```
+
+**API on the host** (use `localhost` in `.env` for `DATABASE_URL` and `REDIS_URL`):
+
+```bash
 go run cmd/main.go
-
-# Terminal 2: Start web frontend
-cd web
-npm run dev
+# or: air
 ```
 
-#### 6. Access the Applications
+**Frontend** (either way):
+
+```bash
+cd web && npm run dev
+```
+
+#### 6. Access the applications
 
 -   **Backend API**: http://localhost:8080
 -   **Web Frontend**: http://localhost:3000
@@ -267,25 +278,31 @@ curl -X POST http://localhost:8080/send-email \
 
 ### Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the repository root (or let `./dev.sh backend` create a starter file if none exists).
+
+**Docker Compose (`app` container):** use the Postgres and Redis **service names** so the API resolves them on the Compose network:
 
 ```env
-# Server Configuration
 PORT=8080
+DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
+REDIS_URL=redis://redis:6379
+```
 
-# Database Configuration
+**Running the API on your machine** (`go run`, `air`): use **localhost** and exposed ports:
+
+```env
+PORT=8080
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable
+REDIS_URL=redis://localhost:6379
+```
 
-# Redis Configuration
-REDIS_URL=redis://localhost:6543
+Shared optional variables (fallback providers, SMTP):
 
-# Email Provider Configuration (Optional - for fallback)
+```env
 BREEVO_API_KEY=your_breevo_api_key
 SENDGRID_API_KEY=your_sendgrid_api_key
 SENDGRID_REGION=global
 MAILERSEND_API_KEY=your_mailersend_api_key
-
-# SMTP Configuration (Optional - for fallback)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USERNAME=your-email@gmail.com
@@ -305,31 +322,36 @@ chitthi/
 ├── cmd/                    # Application entry point
 │   └── main.go
 ├── internal/               # Core business logic
-│   ├── config/            # Configuration management
-│   ├── database/          # Database connections
-│   ├── email/             # Email provider implementations
-│   ├── handler/           # HTTP handlers
-│   ├── model/             # Data models
-│   └── modules/           # Business logic modules
-├── migrations/            # Database migrations
-├── docker-compose.yml     # Infrastructure setup
-├── Dockerfile            # Container configuration
-└── go.mod               # Go dependencies
+│   ├── config/             # Configuration management
+│   ├── database/           # Database connections
+│   ├── email/              # Email provider implementations
+│   ├── handler/            # HTTP handlers
+│   ├── model/              # Data models
+│   └── modules/            # Business logic modules
+├── web/                    # Next.js frontend
+├── migrations/             # Database migrations
+├── docker-compose.yml      # app, db, redis
+├── Dockerfile              # API image (Air for dev)
+├── dev.sh                  # ./dev.sh backend | frontend | infra | down
+└── go.mod                  # Go dependencies
 ```
 
-### Development Commands
+### Development commands
 
 ```bash
-# Run with hot reload (requires air)
+# Recommended: API + DB + Redis in Docker, frontend locally
+./dev.sh backend
+./dev.sh frontend
+
+# Or run the API stack with Compose directly
+docker compose up --build app
+
+# Host-only API (set DATABASE_URL/REDIS_URL to localhost in .env)
 air
+# or: go run cmd/main.go
 
-# Run directly
-go run cmd/main.go
-
-# Run tests
+# Tests and build
 go test ./...
-
-# Build for production
 go build -o main cmd/main.go
 ```
 

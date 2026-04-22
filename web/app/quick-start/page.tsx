@@ -310,7 +310,7 @@ cd chitthi`}
                                             code={`PORT=8080
 
 # Redis config
-REDIS_URL=redis://redis:6543
+REDIS_URL=redis://redis:6379
 
 # Postgres config
 POSTGRES_USER=postgres
@@ -343,7 +343,7 @@ SMTP_USE_TLS=true`}
                                                         `PORT=8080
 
 # Redis config
-REDIS_URL=redis://redis:6543
+REDIS_URL=redis://redis:6379
 
 # Postgres config
 POSTGRES_USER=postgres
