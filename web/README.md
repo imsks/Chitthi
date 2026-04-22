@@ -240,7 +240,7 @@ PORT=8080
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable
 
 # Redis Configuration
-REDIS_URL=redis://localhost:6543
+REDIS_URL=redis://localhost:6379
 
 # Email Provider Configuration (Optional - for fallback)
 BREEVO_API_KEY=your_breevo_api_key
