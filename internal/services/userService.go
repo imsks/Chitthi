@@ -21,14 +21,8 @@ func NewUserService(userDAO *postgres.UserDAO) *UserService {
 
 // Authenticate verifies user credentials and returns the user if valid.
 func (s *UserService) Authenticate(email, password string) (*model.User, error) {
-	// Hash the provided password
-	hashedPassword, err := HashPassword(password)
-	if err != nil {
-		return nil, err
-	}
-
-	// Validate user credentials
-	user, err := s.userDAO.ValidateUserCredentials(context.Background(), email, hashedPassword)
+	// Validate user credentials (password comparison happens in the DAO using bcrypt)
+	user, err := s.userDAO.ValidateUserCredentials(context.Background(), email, password)
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +45,14 @@ func (s *UserService) CreateUser(ctx context.Context, user model.User, password 
 
 	user.ID = userID
 	return &user, nil
+}
+
+func (s *UserService) UpdateOnboardingStatus(ctx context.Context, userID uint, isOnboarded bool) error {
+	return s.userDAO.UpdateOnboardingStatus(ctx, userID, isOnboarded)
+}
+
+func (s *UserService) GetUserByID(ctx context.Context, userID uint) (*model.User, error) {
+	return s.userDAO.GetUserByID(ctx, userID)
 }
 
 func HashPassword(password string) (string, error) {
