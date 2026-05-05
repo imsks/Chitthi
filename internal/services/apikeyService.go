@@ -3,7 +3,10 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/imsks/chitthi/internal/database/postgres"
 )
@@ -18,8 +21,38 @@ func NewAPIKeyService(apiKeyDAO *postgres.APIKeyDAO, providerApiKeyDAO *postgres
 	return &APIKeyServiceImpl{apiKeyDAO: apiKeyDAO, providerApiKeyDAO: providerApiKeyDAO}
 }
 
+// NormalizeUserAPIKeyExpiry returns RFC3339 expiry; empty input defaults to one year from now (UTC).
+func NormalizeUserAPIKeyExpiry(expiresAt string) string {
+	if strings.TrimSpace(expiresAt) == "" {
+		return time.Now().UTC().AddDate(1, 0, 0).Format(time.RFC3339)
+	}
+	return expiresAt
+}
+
+var (
+	ErrSenderEmailRequired = errors.New("sender_email is required")
+	ErrSenderEmailInvalid  = errors.New("sender_email must be a valid email address")
+)
+
+// ValidateSenderEmail checks a minimal RFC-like shape for onboarding BYOK senders.
+func ValidateSenderEmail(email string) error {
+	e := strings.TrimSpace(email)
+	if e == "" {
+		return ErrSenderEmailRequired
+	}
+	if strings.Count(e, "@") != 1 {
+		return ErrSenderEmailInvalid
+	}
+	at := strings.LastIndex(e, "@")
+	if at < 1 || at == len(e)-1 {
+		return ErrSenderEmailInvalid
+	}
+	return nil
+}
+
 func (s *APIKeyServiceImpl) CreateAPIKey(userID uint, expiresAt string) (string, error) {
 	apiKey := generateRandomAPIKey()
+	expiresAt = NormalizeUserAPIKeyExpiry(expiresAt)
 	_, err := s.apiKeyDAO.CreateAPIKey(context.Background(), userID, apiKey, expiresAt)
 	if err != nil {
 		return "", err
@@ -27,13 +60,15 @@ func (s *APIKeyServiceImpl) CreateAPIKey(userID uint, expiresAt string) (string,
 	return apiKey, nil
 }
 
-func (s *APIKeyServiceImpl) AddProviderAPIKey(ctx context.Context, userID uint, provider string, apiKey string) error {
-	// Implement logic to associate the provided API key with the user's account in the database
+func (s *APIKeyServiceImpl) AddProviderAPIKey(ctx context.Context, userID uint, provider string, apiKey string, senderEmail string) error {
+	if err := ValidateSenderEmail(senderEmail); err != nil {
+		return err
+	}
 	providerID, err := s.providerApiKeyDAO.GetProviderIDByName(ctx, provider)
 	if err != nil {
 		return err
 	}
-	_, err = s.providerApiKeyDAO.AddProviderAPIKey(ctx, userID, providerID, apiKey)
+	_, err = s.providerApiKeyDAO.AddProviderAPIKey(ctx, userID, providerID, apiKey, strings.TrimSpace(senderEmail))
 	return err
 }
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { CheckCircle2, Copy, KeyRound, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { addProviderAPIKey, completeOnboarding, createAPIKey } from "@/lib/api"
 import { useAuth } from "@/contexts/auth-context"
-import { getDefaultExpiryDate, providerOptions } from "@/lib/dashboard"
+import { providerOptions } from "@/lib/dashboard"
 import { toast } from "@/hooks/use-toast"
 
 export function OnboardingModal() {
@@ -19,7 +20,7 @@ export function OnboardingModal() {
 	const [step, setStep] = useState<1 | 2>(1)
 	const [provider, setProvider] = useState(providerOptions[0].value)
 	const [providerKey, setProviderKey] = useState("")
-	const [expiry, setExpiry] = useState(getDefaultExpiryDate())
+	const [senderEmail, setSenderEmail] = useState("")
 	const [generatedKey, setGeneratedKey] = useState("")
 	const [error, setError] = useState("")
 	const [savingProvider, setSavingProvider] = useState(false)
@@ -31,11 +32,16 @@ export function OnboardingModal() {
 			setError("Enter your provider API key to continue.")
 			return
 		}
+		const email = senderEmail.trim()
+		if (!email || !email.includes("@")) {
+			setError("Enter the verified sender email your provider expects (e.g. the address you authenticated in SendGrid).")
+			return
+		}
 
 		setError("")
 		setSavingProvider(true)
 		try {
-			await addProviderAPIKey(provider, providerKey.trim())
+			await addProviderAPIKey(provider, providerKey.trim(), email)
 			setStep(2)
 			toast({ title: "Provider key saved", description: "You can update it later from Settings." })
 		} catch (saveError) {
@@ -49,9 +55,9 @@ export function OnboardingModal() {
 		setError("")
 		setGenerating(true)
 		try {
-			const response = await createAPIKey(expiry)
+			const response = await createAPIKey()
 			setGeneratedKey(response.api_key)
-			toast({ title: "API key generated", description: "Copy it now and keep it secure." })
+			toast({ title: "API key generated", description: "Copy it now and keep it secure. It expires in one year by default." })
 		} catch (generateError) {
 			setError(generateError instanceof Error ? generateError.message : "Unable to generate API key")
 		} finally {
@@ -97,7 +103,8 @@ export function OnboardingModal() {
 					</div>
 					<DialogTitle className='text-2xl text-gray-900'>Complete your Chitthi onboarding</DialogTitle>
 					<DialogDescription className='text-gray-600'>
-						Add one provider key, generate your Chitthi API key, and you are ready to route email through your account.
+						Add one provider API key plus the verified sender email your provider recognizes, generate your Chitthi API key, and you can send through your
+						account.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -109,17 +116,18 @@ export function OnboardingModal() {
 									1
 								</div>
 								<div>
-									<p className='font-medium text-gray-900'>Add provider credentials</p>
-									<p className='text-sm text-gray-600'>Store the provider key you want Chitthi to use.</p>
+									<p className='font-medium text-gray-900'>Provider and sender email</p>
+									<p className='text-sm text-gray-600'>API key plus the From address providers require for delivery.</p>
 								</div>
 							</div>
 							<div className='flex items-center gap-3'>
-								<div className={`flex h-8 w-8 items-center justify-center rounded-full ${step === 2 ? "bg-blue-600 text-white" : generatedKey ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"}`}>
+								<div
+									className={`flex h-8 w-8 items-center justify-center rounded-full ${step === 2 ? "bg-blue-600 text-white" : generatedKey ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"}`}>
 									2
 								</div>
 								<div>
-									<p className='font-medium text-gray-900'>Generate Chitthi key</p>
-									<p className='text-sm text-gray-600'>Create and copy the unified API key for your apps.</p>
+									<p className='font-medium text-gray-900'>Generate Chitthi API key</p>
+									<p className='text-sm text-gray-600'>One key for your apps; we default expiry to one year.</p>
 								</div>
 							</div>
 						</CardContent>
@@ -160,20 +168,35 @@ export function OnboardingModal() {
 										onChange={(event) => setProviderKey(event.target.value)}
 									/>
 								</div>
+								<div className='space-y-2'>
+									<Label htmlFor='sender-email'>Verified sender email</Label>
+									<Input
+										id='sender-email'
+										type='email'
+										autoComplete='email'
+										placeholder='e.g. newsletters@yourdomain.com'
+										value={senderEmail}
+										onChange={(event) => setSenderEmail(event.target.value)}
+									/>
+									<p className='text-xs text-muted-foreground'>Must match an authenticated sender identity in your provider (required for unified send).</p>
+								</div>
 								<Button disabled={savingProvider} onClick={() => void handleProviderSave()} className='w-full bg-blue-600 hover:bg-blue-700'>
 									{savingProvider ? "Saving..." : "Save and continue"}
 								</Button>
 							</div>
 						) : (
 							<div className='space-y-4'>
-								<div className='space-y-2'>
-									<Label htmlFor='expiry'>Expiry date</Label>
-									<Input id='expiry' type='date' value={expiry} onChange={(event) => setExpiry(event.target.value)} />
-								</div>
 								<Button disabled={generating} onClick={() => void handleGenerate()} className='w-full bg-blue-600 hover:bg-blue-700'>
 									<KeyRound className='mr-2 h-4 w-4' />
 									{generating ? "Generating..." : "Generate Chitthi API key"}
 								</Button>
+								<p className='text-xs text-muted-foreground'>
+									This key expires one year after creation. Rotate or issue another anytime from{" "}
+									<Link href='/dashboard/api-keys' className='underline'>
+										API Keys
+									</Link>
+									.
+								</p>
 								{generatedKey ? (
 									<Card className='border-green-200 bg-green-50'>
 										<CardContent className='space-y-3 p-4'>

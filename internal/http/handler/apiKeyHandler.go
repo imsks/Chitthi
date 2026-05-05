@@ -2,16 +2,18 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/imsks/chitthi/internal/services"
 )
 
 type APIKeyService interface {
 	CreateAPIKey(userID uint, expiresAt string) (string, error)
 	GetAPIKeys(userID uint) ([]string, error)
 	DeleteAPIKey(userID uint, apiKey string) error
-	AddProviderAPIKey(ctx context.Context, userID uint, provider string, apiKey string) error
+	AddProviderAPIKey(ctx context.Context, userID uint, provider string, apiKey string, senderEmail string) error
 	GetProviderAPIKeys(ctx context.Context, userID uint) ([]string, error)
 }
 
@@ -54,10 +56,14 @@ func (h *APIKeyHandler) AddProviderAPIKeyHandler(c *gin.Context) {
 	}
 
 	// Implement logic to associate the provided API key with the user's account in the database
-	err := h.apiKeyService.AddProviderAPIKey(c.Request.Context(), userID, apiKeyRequest.Provider, apiKeyRequest.APIKey)
+	err := h.apiKeyService.AddProviderAPIKey(c.Request.Context(), userID, apiKeyRequest.Provider, apiKeyRequest.APIKey, apiKeyRequest.SenderEmail)
 	if err != nil {
 		log.Println("error when adding api key", err)
-		c.JSON(500, gin.H{"error": "Failed to add provider API key"})
+		status := 500
+		if errors.Is(err, services.ErrSenderEmailRequired) || errors.Is(err, services.ErrSenderEmailInvalid) {
+			status = 400
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
 		return
 	}
 

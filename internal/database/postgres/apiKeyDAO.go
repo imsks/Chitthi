@@ -47,3 +47,17 @@ func (dao *APIKeyDAO) GetAPIKeys(ctx context.Context, userID uint) ([]string, er
 	}
 	return apiKeys, nil
 }
+
+// GetUserIDByActiveAPIKey resolves a non-expired Chitthi API key to its owner user id.
+func (dao *APIKeyDAO) GetUserIDByActiveAPIKey(ctx context.Context, apiKey string) (uint, error) {
+	var userID uint
+	err := dao.conn.QueryRow(ctx,
+		`SELECT user_id FROM user_api_keys
+		 WHERE api_key = $1 AND (expires_at IS NULL OR expires_at > NOW())`,
+		apiKey,
+	).Scan(&userID)
+	if err != nil {
+		return 0, err
+	}
+	return userID, nil
+}

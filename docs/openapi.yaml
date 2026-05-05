@@ -3,7 +3,7 @@ info:
   title: Chitthi API
   description: |
     Chitthi is a BYOK (Bring Your Own Keys) email delivery service.
-    It supports multiple email providers including Breevo, SendGrid, MailerSend, and SMTP.
+    It supports Breevo, SendGrid, and MailerSend, plus sending with your stored provider credentials using a **Chitthi API key**.
 
     ## Authentication
     When called through the **Next.js** dev server, protected routes are authenticated with headers injected by middleware:
@@ -12,7 +12,9 @@ info:
 
     Direct access to the Go API (e.g. `http://localhost:8080`) also accepts JWT from either:
     - HttpOnly `jwt` cookie set by `POST /api/v1/auth/google`
-    - `Authorization: Bearer <token>` header
+    - `Authorization: Bearer <jwt>` header (Chitthi session JWT).
+
+    For `POST /send-email` only, `Authorization: Bearer <chitthi_api_key>` may instead be your unified Chitthi API key (or use header `X-Chitthi-API-Key`). That path does not use JWT.
 
     After **NextAuth** Google sign-in, the app calls `POST /api/v1/auth/upsert` with a Google ID token to create or update the user in the database (no session cookie).
   version: v1.0.0
@@ -182,7 +184,7 @@ paths:
         - name: expiry
           in: query
           required: false
-          description: Optional expiry datetime for the API key (RFC3339 format). If omitted, key has no expiry.
+          description: Optional expiry datetime for the API key (RFC3339 format). If omitted, the key expires one year from creation (UTC).
           schema:
             type: string
             format: date-time
@@ -337,15 +339,20 @@ paths:
         - Email
       summary: Send an email via a BYOK provider
       description: |
-        Sends an email using the provider determined by the credentials supplied.
-        Credentials can be passed via request headers (preferred) or directly in the request body.
+        Sends an email using credentials you supply or using your **Chitthi API key**.
 
-        ### Provider selection order
-        1. **SMTP** – when `X-SMTP-Host` header is present
-        2. **Breevo** – when `X-Breevo-API-Key` header or `breevo_api_key` body field is present
-        3. **SendGrid** – when `X-SendGrid-API-Key` header or `sendgrid_api_key` body field is present
-        4. **MailerSend** – when `X-MailerSend-API-Key` header or `mailersend_api_key` body field is present
-        5. Falls back to server-configured provider keys
+        ### Chitthi API key (BYOK from dashboard)
+        If you send `Authorization: Bearer <your_chitthi_api_key>` or `X-Chitthi-API-Key: <key>`, and do **not** pass provider API keys in headers or body, Chitthi resolves your user, uses your stored provider credential (SendGrid, Breevo, or MailerSend in that priority order), and fills `from_email` from your saved verified sender email when the JSON body omits it.
+
+        ### Explicit provider keys
+        Credentials can be passed via request headers or in the request body. When provider keys are present, they take precedence over the Chitthi key.
+
+        ### Provider priority (when resolving stored credentials)
+        1. **SendGrid**
+        2. **Breevo**
+        3. **MailerSend**
+
+        Server-configured environment provider keys remain available as fallback when no credentials are detected.
       operationId: sendEmail
       parameters:
         - name: X-Breevo-API-Key
@@ -368,40 +375,11 @@ paths:
           description: MailerSend API key
           schema:
             type: string
-        - name: X-SMTP-Host
+        - name: X-Chitthi-API-Key
           in: header
-          description: SMTP server hostname
+          description: Unified Chitthi API key (alternative to `Authorization: Bearer` with the same token)
           schema:
             type: string
-        - name: X-SMTP-Port
-          in: header
-          description: SMTP server port
-          schema:
-            type: string
-            example: '587'
-        - name: X-SMTP-Username
-          in: header
-          description: SMTP authentication username
-          schema:
-            type: string
-        - name: X-SMTP-Password
-          in: header
-          description: SMTP authentication password
-          schema:
-            type: string
-        - name: X-SMTP-From
-          in: header
-          description: SMTP sender address
-          schema:
-            type: string
-        - name: X-SMTP-Use-TLS
-          in: header
-          description: Whether to use TLS (`true` / `false`)
-          schema:
-            type: string
-            enum:
-              - 'true'
-              - 'false'
       requestBody:
         required: true
         content:
@@ -571,20 +549,24 @@ components:
       required:
         - provider
         - api_key
+        - sender_email
       properties:
         provider:
           type: string
           description: Email provider name
           enum:
             - sendgrid
-            - mailchimp
             - breevo
             - mailersend
-            - smtp
           example: sendgrid
         api_key:
           type: string
           example: SG.xxxxxxxxxxxxxxxxxxxx
+        sender_email:
+          type: string
+          format: email
+          description: Verified sender identity for this provider (used as default From for Chitthi-key sends)
+          example: newsletters@yourdomain.com
 
     SendEmailRequest:
       type: object
@@ -619,7 +601,6 @@ components:
             - sendgrid
             - breevo
             - mailersend
-            - smtp
           example: sendgrid
         breevo_api_key:
           type: string

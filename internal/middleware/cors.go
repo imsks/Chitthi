@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var corsAllowHeaders = "Accept, Authorization, Content-Type, X-CSRF-Token, X-Requested-With, X-Breevo-API-Key, X-SendGrid-API-Key, X-SendGrid-Region, X-MailerSend-API-Key, X-SMTP-Host, X-SMTP-Port, X-SMTP-Username, X-SMTP-Password, X-SMTP-From, X-SMTP-Use-TLS, X-User-ID, X-Chitthi-BFF-Secret"
+var corsAllowHeaders = "Accept, Authorization, Content-Type, X-CSRF-Token, X-Requested-With, X-Breevo-API-Key, X-SendGrid-API-Key, X-SendGrid-Region, X-MailerSend-API-Key, X-Chitthi-API-Key, X-User-ID, X-Chitthi-BFF-Secret"
 
 func applyCORSHeaders(headerSetter interface{ Set(string, string) }) {
 	headerSetter.Set("Access-Control-Allow-Origin", "*")

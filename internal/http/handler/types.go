@@ -12,6 +12,7 @@ type GoogleAuthRequest struct {
 }
 
 type AddProviderAPIKeyRequest struct {
-	Provider string `json:"provider"`
-	APIKey   string `json:"api_key"`
+	Provider    string `json:"provider"`
+	APIKey      string `json:"api_key"`
+	SenderEmail string `json:"sender_email"`
 }

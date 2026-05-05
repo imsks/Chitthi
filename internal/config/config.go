@@ -20,12 +20,6 @@ type Config struct {
 	SendGridAPIKey   string
 	SendGridRegion   string
 	MailerSendAPIKey string
-	SMTPHost         string
-	SMTPPort         string
-	SMTPUsername     string
-	SMTPPassword     string
-	SMTPFrom         string
-	SMTPUseTLS       bool
 }
 
 func getEnv(key, fallback string) string {
@@ -55,11 +49,5 @@ func LoadConfig() Config {
 		SendGridAPIKey:   getEnv("SENDGRID_API_KEY", ""),
 		SendGridRegion:   getEnv("SENDGRID_REGION", "global"),
 		MailerSendAPIKey: getEnv("MAILERSEND_API_KEY", ""),
-		SMTPHost:         getEnv("SMTP_HOST", ""),
-		SMTPPort:         getEnv("SMTP_PORT", "587"),
-		SMTPUsername:     getEnv("SMTP_USERNAME", ""),
-		SMTPPassword:     getEnv("SMTP_PASSWORD", ""),
-		SMTPFrom:         getEnv("SMTP_FROM", ""),
-		SMTPUseTLS:       getEnv("SMTP_USE_TLS", "true") == "true",
 	}
 }

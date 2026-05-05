@@ -137,8 +137,8 @@ export default function Home() {
                         <p className='text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed'>
                             A modern email microservice built in Go with BYOK
                             approach and multi-provider support. Send emails
-                            securely through SendGrid, Breevo, MailerSend, or
-                            SMTP.
+                            securely through SendGrid, Breevo, or MailerSend,
+                            plus one Chitthi API key for unified sends.
                         </p>
 
                         <div className='flex flex-col sm:flex-row gap-4 justify-center items-center'>
@@ -252,7 +252,7 @@ export default function Home() {
                                 icon: Globe,
                                 title: "Multi-Provider Support",
                                 description:
-                                    "Support for Breevo, SendGrid, MailerSend, and SMTP with automatic provider detection.",
+                                    "Support for Breevo, SendGrid, and MailerSend with automatic detection and unified Chitthi API keys.",
                                 color: "text-blue-600",
                                 bgColor: "bg-blue-50"
                             },
@@ -399,14 +399,11 @@ export default function Home() {
                                     </CardHeader>
                                     <CardContent className='pt-0'>
                                         <pre className='text-sm overflow-x-auto'>
-                                            <code>{`curl -X POST https://localhost:8000/send-email \\
+                                            <code>{`curl -X POST https://localhost:8080/send-email \\
   -H "Content-Type: application/json" \\
-  -H "X-SMTP-Host: smtp.gmail.com" \\
-  -H "X-SMTP-Username: your-email@gmail.com" \\
-  -H "X-SMTP-Password: your-app-password" \\
+  -H "Authorization: Bearer YOUR_CHITTHI_API_KEY" \\
   -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com", 
+    "to_email": "recipient@example.com",
     "subject": "Test Email",
     "html_content": "<h1>Hello World!</h1>"
   }'`}</code>

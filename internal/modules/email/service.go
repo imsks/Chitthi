@@ -253,30 +253,6 @@ func (s *Service) createProvidersFromHeaders(credentials map[string]string) []ad
 		providers = append(providers, &adapters.MailerSendAdapter{APIKey: apiKey})
 	}
 
-	// Create SMTP provider if credentials are provided
-	if host := credentials["smtp_host"]; host != "" {
-		port := credentials["smtp_port"]
-		if port == "" {
-			port = "587" // Default port
-		}
-		username := credentials["smtp_username"]
-		password := credentials["smtp_password"]
-		from := credentials["smtp_from"]
-		useTLS := credentials["smtp_use_tls"] == "true"
-
-		if username != "" && password != "" {
-			smtpAdapter := &adapters.SMTPAdapter{
-				Host:     host,
-				Port:     port,
-				Username: username,
-				Password: password,
-				From:     from,
-				UseTLS:   useTLS,
-			}
-			providers = append(providers, smtpAdapter)
-		}
-	}
-
 	return providers
 }
 
@@ -292,12 +268,6 @@ func (s *Service) getProviderFromList(providers []adapters.EmailProvider, name s
 
 // detectProviderFromHeaders automatically detects which provider to use based on headers
 func (s *Service) detectProviderFromHeaders(credentials map[string]string) string {
-	// Check for SMTP credentials first (most specific)
-	if credentials["smtp_host"] != "" {
-		return "smtp"
-	}
-
-	// Check for API keys
 	if credentials["breevo_api_key"] != "" {
 		return "breevo"
 	}

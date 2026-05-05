@@ -9,7 +9,8 @@ export default function DashboardPage() {
 				<Badge className='mb-4 bg-blue-100 text-blue-800 hover:bg-blue-100'>Workspace</Badge>
 				<h1 className='text-3xl font-bold text-gray-900'>Welcome to your dashboard</h1>
 				<p className='mt-2 max-w-2xl text-gray-600'>
-					Your authenticated workspace is ready. Complete onboarding if prompted, then use Settings to manage provider credentials and Chitthi API keys.
+					Your authenticated workspace is ready. Complete onboarding if prompted. Use API Keys for Chitthi unified keys and Settings for provider keys and verified
+					sender email.
 				</p>
 			</div>
 			<div className='grid gap-6 md:grid-cols-3'>

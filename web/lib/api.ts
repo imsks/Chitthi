@@ -74,10 +74,10 @@ export function getAPIKeys() {
 	return apiRequest<{ api_keys: string[] }>("/api/v1/apikeys")
 }
 
-export function addProviderAPIKey(provider: string, apiKey: string) {
+export function addProviderAPIKey(provider: string, apiKey: string, senderEmail: string) {
 	return apiRequest<{ message: string }>("/api/v1/apikeys/provider", {
 		method: "POST",
-		body: { provider, api_key: apiKey }
+		body: { provider, api_key: apiKey, sender_email: senderEmail }
 	})
 }
 

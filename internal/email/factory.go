@@ -26,20 +26,6 @@ func CreateProvidersFromConfig(cfg config.Config) []EmailProvider {
 		log.Println("🚀 MailerSend provider added from config")
 	}
 
-	// Add SMTP provider if configured
-	if cfg.SMTPHost != "" && cfg.SMTPUsername != "" && cfg.SMTPPassword != "" {
-		smtpAdapter := &SMTPAdapter{
-			Host:     cfg.SMTPHost,
-			Port:     cfg.SMTPPort,
-			Username: cfg.SMTPUsername,
-			Password: cfg.SMTPPassword,
-			From:     cfg.SMTPFrom,
-			UseTLS:   cfg.SMTPUseTLS,
-		}
-		providers = append(providers, smtpAdapter)
-		log.Println("🚀 SMTP provider added from config")
-	}
-
 	if len(providers) == 0 {
 		log.Println("No email providers configured")
 	}

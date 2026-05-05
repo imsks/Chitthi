@@ -110,14 +110,22 @@ Use the `-U` / `-d` values that match your `DATABASE_URL`. Passwords with specia
 ```bash
 curl -X POST http://localhost:8080/send-email \
   -H "Content-Type: application/json" \
-  -H "X-SMTP-Host: smtp.gmail.com" \
-  -H "X-SMTP-Port: 587" \
-  -H "X-SMTP-Username: your-email@gmail.com" \
-  -H "X-SMTP-Password: your-app-password" \
-  -H "X-SMTP-From: your-email@gmail.com" \
-  -H "X-SMTP-Use-TLS: true" \
+  -H "X-SendGrid-API-Key: your-sendgrid-key" \
   -d '{
-    "from_email": "sender@example.com",
+    "from_email": "verified-sender@yourdomain.com",
+    "to_email": "recipient@example.com",
+    "subject": "Test Email",
+    "html_content": "<h1>Hello</h1>"
+  }'
+```
+
+Or with your **Chitthi API key** (stored provider + verified sender; `from_email` optional):
+
+```bash
+curl -X POST http://localhost:8080/send-email \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_CHITTHI_API_KEY" \
+  -d '{
     "to_email": "recipient@example.com",
     "subject": "Test Email",
     "html_content": "<h1>Hello</h1>"
@@ -130,12 +138,14 @@ curl -X POST http://localhost:8080/send-email \
 
 | Method | Endpoint | Description |
 | ------ | -------- | ----------- |
-| `POST` | `/send-email` | Send via SMTP, SendGrid, Breevo, or MailerSend (headers) |
+| `POST` | `/send-email` | Send via Chitthi API key, or SendGrid/Breevo/MailerSend headers |
 | `GET` | `/` | Health |
 
 ### `POST /send-email`
 
-**Headers (pick one provider):** `Content-Type: application/json`, plus `X-SMTP-*`, or `X-SendGrid-API-Key`, or `X-Breevo-API-Key`, or `X-MailerSend-API-Key`.
+**Option A — Chitthi key:** `Authorization: Bearer <key>` or `X-Chitthi-API-Key`.
+
+**Option B — Provider:** `Content-Type: application/json` plus `X-SendGrid-API-Key`, `X-Breevo-API-Key`, or `X-MailerSend-API-Key` (or the same keys in the JSON body).
 
 **Body (example):**
 
@@ -160,7 +170,7 @@ curl -X POST http://localhost:8080/send-email \
         "sent_to": "recipient@example.com",
         "sent_from": "sender@example.com",
         "subject": "Subject",
-        "provider": "smtp"
+        "provider": "sendgrid"
     }
 }
 ```
@@ -171,7 +181,6 @@ curl -X POST http://localhost:8080/send-email \
 
 | Provider | Header |
 | -------- | ------ |
-| SMTP | `X-SMTP-Host`, `X-SMTP-Port`, `X-SMTP-Username`, `X-SMTP-Password`, `X-SMTP-From`, `X-SMTP-Use-TLS` |
 | SendGrid | `X-SendGrid-API-Key` |
 | Breevo | `X-Breevo-API-Key` |
 | MailerSend | `X-MailerSend-API-Key` |
@@ -185,7 +194,7 @@ curl -X POST http://localhost:8080/send-email \
   -d '{"from_email":"a@b.com","to_email":"c@d.com","subject":"Hi","html_content":"<p>Hi</p>"}'
 ```
 
-Resolution order: header-based credentials first, then optional env-configured provider keys in `.env`.
+Resolution order: explicit provider credentials first, otherwise Chitthi API key resolves stored credentials; optional env-configured keys in `.env` as fallback.
 
 ---
 
@@ -217,21 +226,15 @@ Docker Compose sets **`INTERNAL_API_URL=http://app:8080`** on the `web` service 
 
 Under **Authorized redirect URIs**, add **`http://localhost:3000/api/auth/callback/google`** for local dev (NextAuth), plus your production callback URL when you deploy.
 
-Run migration **`000004`** so `users.password_hash` can be null for Google-only accounts.
+Run migrations including **`000004`** (Google-only accounts: nullable `users.password_hash`) and **`000005`** (verified `sender_email` on `provider_api_keys`).
 
-Optional fallbacks / SMTP:
+Optional env-configured fallback provider keys:
 
 ```env
 BREEVO_API_KEY=
 SENDGRID_API_KEY=
 SENDGRID_REGION=global
 MAILERSEND_API_KEY=
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USERNAME=
-SMTP_PASSWORD=
-SMTP_FROM=
-SMTP_USE_TLS=true
 ```
 
 ---

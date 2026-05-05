@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -15,12 +16,18 @@ func NewProviderAPIKeysDAO(conn *pgx.Conn) *ProviderAPIKeysDAO {
 	return &ProviderAPIKeysDAO{conn: conn}
 }
 
-func (dao *ProviderAPIKeysDAO) AddProviderAPIKey(ctx context.Context, userID uint, providerID uint, apiKey string) (int64, error) {
+func (dao *ProviderAPIKeysDAO) AddProviderAPIKey(ctx context.Context, userID uint, providerID uint, apiKey string, senderEmail string) (int64, error) {
 	var apiKeyID int64
 	err := dao.conn.QueryRow(
 		ctx,
-		"INSERT INTO provider_api_keys (user_id, provider_id, api_key) VALUES ($1, $2, $3) ON CONFLICT (user_id, provider_id) DO UPDATE SET api_key = EXCLUDED.api_key, updated_at = NOW() RETURNING id",
-		userID, providerID, apiKey,
+		`INSERT INTO provider_api_keys (user_id, provider_id, api_key, sender_email)
+		 VALUES ($1, $2, $3, $4)
+		 ON CONFLICT (user_id, provider_id) DO UPDATE SET
+		   api_key = EXCLUDED.api_key,
+		   sender_email = EXCLUDED.sender_email,
+		   updated_at = NOW()
+		 RETURNING id`,
+		userID, providerID, apiKey, senderEmail,
 	).Scan(&apiKeyID)
 	if err != nil {
 		return 0, err
@@ -90,4 +97,39 @@ func (dao *ProviderAPIKeysDAO) GetConfiguredProviderNames(ctx context.Context, u
 	}
 
 	return providers, rows.Err()
+}
+
+// PrimaryProviderCredential is the stored BYOK row chosen for unified /send-email routing.
+type PrimaryProviderCredential struct {
+	ProviderName string
+	APIKey       string
+	SenderEmail  string
+}
+
+// GetPrimaryProviderCredential picks sendgrid, then breevo, then mailersend (skips smtp and unsupported names).
+func (dao *ProviderAPIKeysDAO) GetPrimaryProviderCredential(ctx context.Context, userID uint) (*PrimaryProviderCredential, error) {
+	row := dao.conn.QueryRow(ctx,
+		`SELECT p.name::text, pak.api_key, pak.sender_email
+		 FROM provider_api_keys pak
+		 JOIN providers p ON p.id = pak.provider_id
+		 WHERE pak.user_id = $1
+		   AND p.name IN ('sendgrid', 'breevo', 'mailersend')
+		 ORDER BY
+		   CASE p.name
+		     WHEN 'sendgrid' THEN 1
+		     WHEN 'breevo' THEN 2
+		     WHEN 'mailersend' THEN 3
+		     ELSE 4
+		   END
+		 LIMIT 1`,
+		userID,
+	)
+	var cred PrimaryProviderCredential
+	if err := row.Scan(&cred.ProviderName, &cred.APIKey, &cred.SenderEmail); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("no supported provider credentials for user")
+		}
+		return nil, err
+	}
+	return &cred, nil
 }
