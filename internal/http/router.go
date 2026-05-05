@@ -29,11 +29,12 @@ func SetupRouter(cfg *config.Config, conn *pgx.Conn) *gin.Engine {
 
 	// Public routes
 	router.POST("/api/v1/auth/google", authHandler.GoogleAuthHandler)
+	router.POST("/api/v1/auth/upsert", authHandler.GoogleUpsertHandler)
 	router.POST("/api/v1/auth/logout", authHandler.LogoutHandler)
 
 	// Protected routes (require authentication)
 	authGroup := router.Group("/api/v1")
-	authGroup.Use(middleware.AuthMiddleware([]byte(cfg.JWTSecret)))
+	authGroup.Use(middleware.AuthMiddleware(cfg))
 	{
 		authGroup.GET("/user/me", authHandler.GetMeHandler)
 		authGroup.POST("/user/onboarding", authHandler.UpdateOnboardingStatusHandler)

@@ -30,6 +30,7 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=
+CHITTHI_BFF_SECRET=
 DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
 REDIS_URL=redis://redis:6379
 RABBITMQ_URL=

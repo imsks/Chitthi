@@ -49,6 +49,24 @@ func (dao *UserDAO) UpdateOnboardingStatus(ctx context.Context, userID uint, isO
 	return err
 }
 
+func (dao *UserDAO) UpsertGoogleUser(ctx context.Context, name, email string) (*model.User, error) {
+	var user model.User
+	err := dao.conn.QueryRow(
+		ctx,
+		`INSERT INTO users (name, email, password_hash, is_onboarded, profession)
+		 VALUES ($1, $2, NULL, FALSE, NULL)
+		 ON CONFLICT (email) DO UPDATE SET
+		   name = EXCLUDED.name,
+		   updated_at = NOW()
+		 RETURNING id, name, email, is_onboarded, profession, created_at, updated_at`,
+		name, email,
+	).Scan(&user.ID, &user.Name, &user.Email, &user.IsOnboarded, &user.Profession, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (dao *UserDAO) GetUserByID(ctx context.Context, userID uint) (*model.User, error) {
 	var user model.User
 	err := dao.conn.QueryRow(

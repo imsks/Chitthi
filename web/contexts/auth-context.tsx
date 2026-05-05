@@ -1,7 +1,7 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
-import { signOut } from "next-auth/react"
+import { createContext, useCallback, useContext, useEffect, useState } from "react"
+import { signOut, useSession } from "next-auth/react"
 import { getMe, logout as logoutRequest, type User } from "@/lib/api"
 
 type AuthContextValue = {
@@ -15,10 +15,11 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+	const { status } = useSession()
 	const [user, setUser] = useState<User | null>(null)
 	const [loading, setLoading] = useState(true)
 
-	const refreshUser = async () => {
+	const refreshUser = useCallback(async () => {
 		try {
 			const response = await getMe()
 			setUser(response.user)
@@ -29,11 +30,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		} finally {
 			setLoading(false)
 		}
-	}
+	}, [])
 
 	useEffect(() => {
-		void refreshUser()
-	}, [])
+		if (status === "loading") {
+			setLoading(true)
+			return
+		}
+		if (status === "unauthenticated") {
+			setUser(null)
+			setLoading(false)
+			return
+		}
+		if (status === "authenticated") {
+			void refreshUser()
+		}
+	}, [status, refreshUser])
 
 	const logout = async () => {
 		try {

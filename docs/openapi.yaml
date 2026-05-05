@@ -6,9 +6,15 @@ info:
     It supports multiple email providers including Breevo, SendGrid, MailerSend, and SMTP.
 
     ## Authentication
-    Protected routes accept JWT from either:
-    - HttpOnly `jwt` cookie set by `POST /api/v1/auth/google` (used by web app)
+    When called through the **Next.js** dev server, protected routes are authenticated with headers injected by middleware:
+    - `X-User-ID` (database user id)
+    - `X-Chitthi-BFF-Secret` (shared secret; must match the Go API `CHITTHI_BFF_SECRET`)
+
+    Direct access to the Go API (e.g. `http://localhost:8080`) also accepts JWT from either:
+    - HttpOnly `jwt` cookie set by `POST /api/v1/auth/google`
     - `Authorization: Bearer <token>` header
+
+    After **NextAuth** Google sign-in, the app calls `POST /api/v1/auth/upsert` with a Google ID token to create or update the user in the database (no session cookie).
   version: v1.0.0
   contact:
     name: Chitthi on GitHub
@@ -50,6 +56,39 @@ paths:
                   logged_in:
                     type: boolean
                     example: true
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid or unverified Google credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/auth/upsert:
+    post:
+      tags:
+        - Auth
+      summary: Upsert user from Google ID token (NextAuth / server-side; no JWT cookie)
+      operationId: googleAuthUpsert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: User created or updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
                   user:
                     $ref: '#/components/schemas/User'
         '400':

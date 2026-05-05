@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	JWTSecret        string
+	BFFSecret        string
 	GoogleClientID   string
 	ApplicationName  string
 	Port             string
@@ -43,6 +44,7 @@ func LoadConfig() Config {
 
 	return Config{
 		JWTSecret:        getEnv("JWT_SECRET", "your-secret-key"),
+		BFFSecret:        getEnv("CHITTHI_BFF_SECRET", ""),
 		GoogleClientID:   getEnv("GOOGLE_CLIENT_ID", ""),
 		ApplicationName:  getEnv("APPLICATION_NAME", "chitthi"),
 		Port:             getEnv("PORT", "8080"),

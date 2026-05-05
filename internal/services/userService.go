@@ -7,7 +7,6 @@ import (
 
 	"github.com/imsks/chitthi/internal/database/postgres"
 	"github.com/imsks/chitthi/internal/model"
-	"github.com/jackc/pgx/v5"
 )
 
 type UserService struct {
@@ -18,9 +17,12 @@ func NewUserService(userDAO *postgres.UserDAO) *UserService {
 	return &UserService{userDAO: userDAO}
 }
 
-// FindOrCreateGoogleUser returns an existing user by email or creates one from Google profile data.
-func (s *UserService) FindOrCreateGoogleUser(ctx context.Context, email, name string) (*model.User, error) {
+// UpsertGoogleUser creates or updates a user from Google profile data (keyed by email).
+func (s *UserService) UpsertGoogleUser(ctx context.Context, email, name string) (*model.User, error) {
 	email = strings.TrimSpace(strings.ToLower(email))
+	if email == "" {
+		return nil, errors.New("email required")
+	}
 	if name == "" {
 		if at := strings.Index(email, "@"); at > 0 {
 			name = email[:at]
@@ -29,26 +31,7 @@ func (s *UserService) FindOrCreateGoogleUser(ctx context.Context, email, name st
 		}
 	}
 
-	user, err := s.userDAO.GetUserByEmail(ctx, email)
-	if err == nil {
-		return user, nil
-	}
-	if !errors.Is(err, pgx.ErrNoRows) {
-		return nil, err
-	}
-
-	u := model.User{
-		Name:        name,
-		Email:       email,
-		IsOnboarded: false,
-		Profession:  nil,
-	}
-	id, err := s.userDAO.CreateUserGoogle(ctx, u)
-	if err != nil {
-		return nil, err
-	}
-	u.ID = id
-	return &u, nil
+	return s.userDAO.UpsertGoogleUser(ctx, name, email)
 }
 
 func (s *UserService) UpdateOnboardingStatus(ctx context.Context, userID uint, isOnboarded bool) error {

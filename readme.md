@@ -195,11 +195,12 @@ If `.env` is missing, `./dev.sh up` creates a starter file.
 
 **Postgres** is configured from **`DATABASE_URL` only** for the `db` container (see [PostgreSQL](#postgresql-single-database_url)). Use host **`db`** so `app` and `db` agree inside Compose.
 
-**Same `.env`** also supplies the Go app, **NextAuth (Google)**, the Go session cookie, and optional provider keys:
+**Same `.env`** also supplies the Go app, **NextAuth (Google)**, server-to-server auth, and optional provider keys:
 
 ```env
 PORT=8080
 JWT_SECRET=use-a-long-random-string-in-production
+CHITTHI_BFF_SECRET=generate-with-openssl-rand-hex-32
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 NEXTAUTH_URL=http://localhost:3000
@@ -208,7 +209,9 @@ DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
 REDIS_URL=redis://redis:6379
 ```
 
-Docker Compose sets **`INTERNAL_API_URL=http://app:8080`** on the `web` service so NextAuth can sync the Go **`jwt`** cookie server-side. For local `npm run dev` against a running API, set **`INTERNAL_API_URL=http://localhost:8080`** (or omit if your rewrite points at the same host).
+Use the **same** value for **`CHITTHI_BFF_SECRET`** in both the Go API and Next.js. After NextAuth signs you in, Next calls **`POST /api/v1/auth/upsert`** (with a Google ID token) to create/update the user in Postgres; authenticated **`/api/v1/*`** requests from the browser go through Next.js, which adds **`X-User-ID`** and **`X-Chitthi-BFF-Secret`** for the Go API.
+
+Docker Compose sets **`INTERNAL_API_URL=http://app:8080`** on the `web` service so NextAuth can reach the Go API from the Next.js server. For local `npm run dev` with the API on your machine, set **`INTERNAL_API_URL=http://localhost:8080`**.
 
 **Google Cloud Console** (OAuth 2.0 **Web client**): under **Authorized JavaScript origins**, add exactly what the browser uses. Local `next dev` is **`http://localhost:3000`** (not `https`—scheme must match or you get **Error 400: origin_mismatch**). Add your production `https://…` origin separately when you deploy.
 

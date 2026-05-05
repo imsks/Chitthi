@@ -23,8 +23,7 @@ export function LoginView() {
 			return ""
 		}
 		const map: Record<string, string> = {
-			sync: "Session expired. Please sign in again.",
-			session: "Could not start Google session. Try again.",
+			session: "Could not complete sign-in. Try again.",
 			backend: "Could not connect your account to the API. Check the server.",
 			config: "Server is missing NEXTAUTH_SECRET or auth configuration."
 		}

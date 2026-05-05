@@ -13,7 +13,7 @@ import (
 )
 
 type UserService interface {
-	FindOrCreateGoogleUser(ctx context.Context, email, name string) (*model.User, error)
+	UpsertGoogleUser(ctx context.Context, email, name string) (*model.User, error)
 	UpdateOnboardingStatus(ctx context.Context, userID uint, isOnboarded bool) error
 	GetUserByID(ctx context.Context, userID uint) (*model.User, error)
 }
@@ -26,57 +26,92 @@ func NewAuthHandler(userService UserService) *AuthHandler {
 	return &AuthHandler{userService: userService}
 }
 
-func (h *AuthHandler) GoogleAuthHandler(c *gin.Context) {
-	var req GoogleAuthRequest
-	if err := c.ShouldBindJSON(&req); err != nil || req.Credential == "" {
-		c.JSON(400, gin.H{"error": "invalid request"})
-		return
+func parseGoogleProfile(ctx context.Context, credential string) (email, name string, httpCode int, errMsg string) {
+	if credential == "" {
+		return "", "", 400, "invalid request"
 	}
 
 	cfg := config.LoadConfig()
 	if cfg.GoogleClientID == "" {
 		log.Println("GOOGLE_CLIENT_ID is not set")
-		c.JSON(500, gin.H{"error": "Google Sign-In is not configured"})
-		return
+		return "", "", 500, "Google Sign-In is not configured"
 	}
 
-	payload, err := idtoken.Validate(c.Request.Context(), req.Credential, cfg.GoogleClientID)
+	payload, err := idtoken.Validate(ctx, credential, cfg.GoogleClientID)
 	if err != nil {
 		log.Println("Google ID token validation failed:", err)
-		c.JSON(401, gin.H{"error": "invalid Google credential"})
-		return
+		return "", "", 401, "invalid Google credential"
 	}
 
-	email, _ := payload.Claims["email"].(string)
+	email, _ = payload.Claims["email"].(string)
 	if email == "" {
-		c.JSON(401, gin.H{"error": "email not present in Google account"})
-		return
+		return "", "", 401, "email not present in Google account"
 	}
 
 	if !isEmailVerified(payload.Claims["email_verified"]) {
-		c.JSON(401, gin.H{"error": "Google email must be verified"})
+		return "", "", 401, "Google email must be verified"
+	}
+
+	name, _ = payload.Claims["name"].(string)
+	return email, name, 0, ""
+}
+
+// GoogleUpsertHandler validates a Google ID token and upserts the user (no session cookie).
+// Used by the Next.js app after NextAuth sign-in.
+func (h *AuthHandler) GoogleUpsertHandler(c *gin.Context) {
+	var req GoogleAuthRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
 		return
 	}
 
-	name, _ := payload.Claims["name"].(string)
+	email, name, code, msg := parseGoogleProfile(c.Request.Context(), req.Credential)
+	if code != 0 {
+		c.JSON(code, gin.H{"error": msg})
+		return
+	}
 
-	user, err := h.userService.FindOrCreateGoogleUser(c.Request.Context(), email, name)
+	user, err := h.userService.UpsertGoogleUser(c.Request.Context(), email, name)
 	if err != nil {
-		log.Println("FindOrCreateGoogleUser failed:", err)
+		log.Println("UpsertGoogleUser failed:", err)
+		c.JSON(500, gin.H{"error": "failed to sync user"})
+		return
+	}
+
+	c.JSON(200, gin.H{"user": user})
+}
+
+func (h *AuthHandler) GoogleAuthHandler(c *gin.Context) {
+	var req GoogleAuthRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "invalid request"})
+		return
+	}
+
+	email, name, code, msg := parseGoogleProfile(c.Request.Context(), req.Credential)
+	if code != 0 {
+		c.JSON(code, gin.H{"error": msg})
+		return
+	}
+
+	user, err := h.userService.UpsertGoogleUser(c.Request.Context(), email, name)
+	if err != nil {
+		log.Println("UpsertGoogleUser failed:", err)
 		c.JSON(500, gin.H{"error": "failed to sign in"})
 		return
 	}
 
+	cfg := config.LoadConfig()
 	claims := CustomClaims{
 		UserID: uint(user.ID),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-			Issuer:    config.LoadConfig().ApplicationName,
+			Issuer:    cfg.ApplicationName,
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(config.LoadConfig().JWTSecret))
+	tokenString, err := token.SignedString([]byte(cfg.JWTSecret))
 	if err != nil {
 		c.JSON(500, gin.H{"error": "failed to generate token"})
 		return
