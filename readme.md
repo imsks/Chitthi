@@ -49,6 +49,10 @@ Or in the background:
 docker compose up -d --build
 ```
 
+**Next.js hot reload in Docker:** `web/` is bind-mounted while `node_modules` lives in the `web_node_modules` volume. On each start, `web/docker-entrypoint.sh` runs `npm ci` when `package-lock.json` changes or expected packages (e.g. `next`, `@react-oauth/google`) are missing—so new dependencies are picked up without relying on host `npm install`. The API always gets `REDIS_URL` / `DATABASE_URL` pointed at Compose service names (`redis`, `db`), and the API waits until Redis passes `redis-cli ping`.
+
+**Redis on the host:** if port `6379` is already taken (another Redis, Homebrew, etc.), Compose publishes Redis on **`localhost:${CHITTHI_REDIS_PORT:-16379}`** by default. Set `CHITTHI_REDIS_PORT` in `.env` to change it. `app` still uses `redis://redis:6379` on the Docker network.
+
 Stop:
 
 ```bash

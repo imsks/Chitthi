@@ -6,16 +6,24 @@ services:
     container_name: chitthi_app
     ports:
       - "8080:8080"
-    depends_on:
-      - db
-      - redis
     env_file:
       - .env
+    environment:
+      # Override .env so in-container resolution always uses Compose DNS (avoids localhost / stale files).
+      DATABASE_URL: postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      db:
+        condition: service_started
+      redis:
+        condition: service_healthy
     volumes:
       - .:/app
       - air_tmp:/app/tmp
     command: ["air"]
     restart: unless-stopped
+    networks:
+      - chitthi
 
   web:
     build:
@@ -31,20 +39,32 @@ services:
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       WATCHPACK_POLLING: "true"
     depends_on:
-      - app
+      app:
+        condition: service_started
     volumes:
       - ./web:/app
       - web_node_modules:/app/node_modules
     restart: unless-stopped
+    networks:
+      - chitthi
 
   redis:
     image: redis:7
     container_name: chitthi_redis
     ports:
-      - "6379:6379"
+      # Host port (avoid clash if another Redis uses 6379). In Compose, use host name `redis` and port 6379.
+      - "${CHITTHI_REDIS_PORT:-16379}:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
     restart: unless-stopped
+    networks:
+      - chitthi
 
   db:
     image: postgres:15
@@ -58,6 +78,12 @@ services:
       - ./scripts/pg-docker-entrypoint.sh:/pg-docker-entrypoint.sh:ro
     entrypoint: ["/bin/bash", "/pg-docker-entrypoint.sh"]
     restart: unless-stopped
+    networks:
+      - chitthi
+
+networks:
+  chitthi:
+    driver: bridge
 
 volumes:
   redis_data:
