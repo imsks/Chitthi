@@ -24,5 +24,8 @@ vendor/
 .DS_Store
 Thumbs.db
 
-# Env files (we’ll map them with docker-compose)
+# Env files (compose uses env_file mapping)
 .env
+
+# Frontend has its own image; keeps API build context small
+web/
