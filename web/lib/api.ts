@@ -42,13 +42,6 @@ async function apiRequest<T>(path: string, options: RequestOptions = {}): Promis
 	return (await response.json()) as T
 }
 
-export function googleSignIn(credential: string) {
-	return apiRequest<{ logged_in: boolean; user: User }>("/api/v1/auth/google", {
-		method: "POST",
-		body: { credential }
-	})
-}
-
 export function logout() {
 	return apiRequest<{ logged_out: boolean }>("/api/v1/auth/logout", {
 		method: "POST"

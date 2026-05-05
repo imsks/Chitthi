@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { signOut } from "next-auth/react"
 import { getMe, logout as logoutRequest, type User } from "@/lib/api"
 
 type AuthContextValue = {
@@ -15,7 +15,6 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-	const router = useRouter()
 	const [user, setUser] = useState<User | null>(null)
 	const [loading, setLoading] = useState(true)
 
@@ -37,10 +36,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	}, [])
 
 	const logout = async () => {
-		await logoutRequest()
+		try {
+			await logoutRequest()
+		} catch {
+			/* still sign out of NextAuth */
+		}
 		setUser(null)
-		router.push("/login")
-		router.refresh()
+		await signOut({ callbackUrl: "/login" })
 	}
 
 	return (

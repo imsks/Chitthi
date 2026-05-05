@@ -36,7 +36,8 @@ services:
       - .env
     environment:
       NEXT_PUBLIC_API_URL: http://app:8080
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      INTERNAL_API_URL: http://app:8080
       WATCHPACK_POLLING: "true"
     depends_on:
       app:

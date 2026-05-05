@@ -49,7 +49,7 @@ Or in the background:
 docker compose up -d --build
 ```
 
-**Next.js hot reload in Docker:** `web/` is bind-mounted while `node_modules` lives in the `web_node_modules` volume. On each start, `web/docker-entrypoint.sh` runs `npm ci` when `package-lock.json` changes or expected packages (e.g. `next`, `@react-oauth/google`) are missing—so new dependencies are picked up without relying on host `npm install`. The API always gets `REDIS_URL` / `DATABASE_URL` pointed at Compose service names (`redis`, `db`), and the API waits until Redis passes `redis-cli ping`.
+**Next.js hot reload in Docker:** `web/` is bind-mounted while `node_modules` lives in the `web_node_modules` volume. On each start, `web/docker-entrypoint.sh` runs `npm ci` when `package-lock.json` changes or expected packages (e.g. `next`, `next-auth`) are missing—so new dependencies are picked up without relying on host `npm install`. The API always gets `REDIS_URL` / `DATABASE_URL` pointed at Compose service names (`redis`, `db`), and the API waits until Redis passes `redis-cli ping`.
 
 **Redis on the host:** if port `6379` is already taken (another Redis, Homebrew, etc.), Compose publishes Redis on **`localhost:${CHITTHI_REDIS_PORT:-16379}`** by default. Set `CHITTHI_REDIS_PORT` in `.env` to change it. `app` still uses `redis://redis:6379` on the Docker network.
 
@@ -195,17 +195,24 @@ If `.env` is missing, `./dev.sh up` creates a starter file.
 
 **Postgres** is configured from **`DATABASE_URL` only** for the `db` container (see [PostgreSQL](#postgresql-single-database_url)). Use host **`db`** so `app` and `db` agree inside Compose.
 
-**Same `.env`** also supplies the Go app, **Google Sign-In**, session cookies, and optional provider keys:
+**Same `.env`** also supplies the Go app, **NextAuth (Google)**, the Go session cookie, and optional provider keys:
 
 ```env
 PORT=8080
 JWT_SECRET=use-a-long-random-string-in-production
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=generate-with-openssl-rand-base64-32
 DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
 REDIS_URL=redis://redis:6379
 ```
 
-**Google Cloud Console** (OAuth 2.0 **Web client**): under **Authorized JavaScript origins** add `http://localhost:3000` (and your production UI origin). The web app uses Google Identity Services (ID token). The API validates the token with `GOOGLE_CLIENT_ID` only — you do not need to configure a client secret for this flow.
+Docker Compose sets **`INTERNAL_API_URL=http://app:8080`** on the `web` service so NextAuth can sync the Go **`jwt`** cookie server-side. For local `npm run dev` against a running API, set **`INTERNAL_API_URL=http://localhost:8080`** (or omit if your rewrite points at the same host).
+
+**Google Cloud Console** (OAuth 2.0 **Web client**): under **Authorized JavaScript origins**, add exactly what the browser uses. Local `next dev` is **`http://localhost:3000`** (not `https`—scheme must match or you get **Error 400: origin_mismatch**). Add your production `https://…` origin separately when you deploy.
+
+Under **Authorized redirect URIs**, add **`http://localhost:3000/api/auth/callback/google`** for local dev (NextAuth), plus your production callback URL when you deploy.
 
 Run migration **`000004`** so `users.password_hash` can be null for Google-only accounts.
 

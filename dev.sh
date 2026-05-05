@@ -27,6 +27,9 @@ create_env_if_missing() {
 PORT=8080
 JWT_SECRET=change-me-generate-with-openssl-rand-hex-32
 GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=
 DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
 REDIS_URL=redis://redis:6379
 RABBITMQ_URL=
