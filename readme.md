@@ -191,13 +191,19 @@ If `.env` is missing, `./dev.sh up` creates a starter file.
 
 **Postgres** is configured from **`DATABASE_URL` only** for the `db` container (see [PostgreSQL](#postgresql-single-database_url)). Use host **`db`** so `app` and `db` agree inside Compose.
 
-**Same `.env`** also supplies the Go app and optional provider keys:
+**Same `.env`** also supplies the Go app, **Google Sign-In**, session cookies, and optional provider keys:
 
 ```env
 PORT=8080
+JWT_SECRET=use-a-long-random-string-in-production
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
 REDIS_URL=redis://redis:6379
 ```
+
+**Google Cloud Console** (OAuth 2.0 **Web client**): under **Authorized JavaScript origins** add `http://localhost:3000` (and your production UI origin). The web app uses Google Identity Services (ID token). The API validates the token with `GOOGLE_CLIENT_ID` only — you do not need to configure a client secret for this flow.
+
+Run migration **`000004`** so `users.password_hash` can be null for Google-only accounts.
 
 Optional fallbacks / SMTP:
 

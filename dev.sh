@@ -25,6 +25,8 @@ create_env_if_missing() {
     echo "Creating .env — edit for provider keys if needed."
     cat > .env << 'EOF'
 PORT=8080
+JWT_SECRET=change-me-generate-with-openssl-rand-hex-32
+GOOGLE_CLIENT_ID=
 DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
 REDIS_URL=redis://redis:6379
 RABBITMQ_URL=

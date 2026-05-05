@@ -9,11 +9,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/imsks/chitthi/internal/config"
 	"github.com/imsks/chitthi/internal/model"
+	"google.golang.org/api/idtoken"
 )
 
 type UserService interface {
-	Authenticate(email, password string) (*model.User, error)
-	CreateUser(context context.Context, user model.User, password string) (*model.User, error)
+	FindOrCreateGoogleUser(ctx context.Context, email, name string) (*model.User, error)
 	UpdateOnboardingStatus(ctx context.Context, userID uint, isOnboarded bool) error
 	GetUserByID(ctx context.Context, userID uint) (*model.User, error)
 }
@@ -26,24 +26,46 @@ func NewAuthHandler(userService UserService) *AuthHandler {
 	return &AuthHandler{userService: userService}
 }
 
-func (h *AuthHandler) LoginHandler(c *gin.Context) {
-	// 1. Authenticate user credentials against database
-
-	var loginReq LoginRequest
-
-	if err := c.ShouldBindJSON(&loginReq); err != nil {
+func (h *AuthHandler) GoogleAuthHandler(c *gin.Context) {
+	var req GoogleAuthRequest
+	if err := c.ShouldBindJSON(&req); err != nil || req.Credential == "" {
 		c.JSON(400, gin.H{"error": "invalid request"})
 		return
 	}
 
-	// Look up user in DB and verify password
-	user, err := h.userService.Authenticate(loginReq.Email, loginReq.Password)
-	if err != nil {
-		log.Println("Authentication failed:", err)
-		c.JSON(401, gin.H{"error": "invalid credentials"})
+	cfg := config.LoadConfig()
+	if cfg.GoogleClientID == "" {
+		log.Println("GOOGLE_CLIENT_ID is not set")
+		c.JSON(500, gin.H{"error": "Google Sign-In is not configured"})
 		return
 	}
-	// 2. If valid, create claims
+
+	payload, err := idtoken.Validate(c.Request.Context(), req.Credential, cfg.GoogleClientID)
+	if err != nil {
+		log.Println("Google ID token validation failed:", err)
+		c.JSON(401, gin.H{"error": "invalid Google credential"})
+		return
+	}
+
+	email, _ := payload.Claims["email"].(string)
+	if email == "" {
+		c.JSON(401, gin.H{"error": "email not present in Google account"})
+		return
+	}
+
+	if !isEmailVerified(payload.Claims["email_verified"]) {
+		c.JSON(401, gin.H{"error": "Google email must be verified"})
+		return
+	}
+
+	name, _ := payload.Claims["name"].(string)
+
+	user, err := h.userService.FindOrCreateGoogleUser(c.Request.Context(), email, name)
+	if err != nil {
+		log.Println("FindOrCreateGoogleUser failed:", err)
+		c.JSON(500, gin.H{"error": "failed to sign in"})
+		return
+	}
 
 	claims := CustomClaims{
 		UserID: uint(user.ID),
@@ -53,7 +75,6 @@ func (h *AuthHandler) LoginHandler(c *gin.Context) {
 		},
 	}
 
-	// 3. Create token and sign with secret key
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(config.LoadConfig().JWTSecret))
 	if err != nil {
@@ -66,27 +87,17 @@ func (h *AuthHandler) LoginHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"logged_in": true, "user": user})
 }
 
-func (h *AuthHandler) SignupHandler(c *gin.Context) {
-	var signupReq SignupRequest
-
-	if err := c.ShouldBindJSON(&signupReq); err != nil {
-		c.JSON(400, gin.H{"error": "invalid request"})
-		return
+func isEmailVerified(raw any) bool {
+	switch v := raw.(type) {
+	case bool:
+		return v
+	case string:
+		return v == "true" || v == "1"
+	case float64:
+		return v != 0
+	default:
+		return false
 	}
-	user := model.User{
-		Name:        signupReq.Name,
-		Email:       signupReq.Email,
-		Profession:  &signupReq.Profession,
-		IsOnboarded: false,
-	}
-	createdUser, err := h.userService.CreateUser(c.Request.Context(), user, signupReq.Password)
-	if err != nil {
-		log.Println("Error creating user:", err)
-		c.JSON(500, gin.H{"error": "failed to create user"})
-		return
-	}
-
-	c.JSON(201, gin.H{"user": createdUser})
 }
 
 func (h *AuthHandler) LogoutHandler(c *gin.Context) {
@@ -94,11 +105,9 @@ func (h *AuthHandler) LogoutHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"logged_out": true})
 }
 
-// later we need to move this to a separate handler file like user_handler.go but for now keeping it here.
 func (h *AuthHandler) UpdateOnboardingStatusHandler(c *gin.Context) {
 	userID := c.GetUint("user_id")
 
-	// Implement logic to update the onboarding status of the user in the database
 	err := h.userService.UpdateOnboardingStatus(c.Request.Context(), userID, true)
 	if err != nil {
 		log.Println("Error updating onboarding status:", err)

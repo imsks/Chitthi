@@ -2,7 +2,7 @@ import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from "@/contexts/auth-context"
+import { AppProviders } from "@/components/app-providers"
 
 // Optimize font loading with display swap
 const inter = Inter({
@@ -105,10 +105,10 @@ export default function RootLayout({
                 <link rel='dns-prefetch' href='//fonts.gstatic.com' />
             </head>
             <body className={`${inter.className} antialiased`}>
-                <AuthProvider>
+                <AppProviders>
                     {children}
                     <Toaster />
-                </AuthProvider>
+                </AppProviders>
             </body>
         </html>
     )

@@ -85,11 +85,8 @@ export default function Home() {
                             className='text-gray-600 hover:text-blue-600 transition-colors'>
                             Docs
                         </Link>
-                        <Button asChild variant='ghost' className='text-gray-700 hover:bg-blue-50 hover:text-blue-600'>
-                            <Link href='/login'>Login</Link>
-                        </Button>
                         <Button asChild className='bg-blue-600 hover:bg-blue-700'>
-                            <Link href='/signup'>Sign Up</Link>
+                            <Link href='/login'>Sign in with Google</Link>
                         </Button>
                         <Button
                             asChild
@@ -139,17 +136,10 @@ export default function Home() {
                                 asChild
                                 size='lg'
                                 className='bg-blue-600 hover:bg-blue-700 text-lg px-8'>
-                                <Link href='/signup'>
-                                    Sign Up
+                                <Link href='/login'>
+                                    Sign in with Google
                                     <ArrowRight className='ml-2 w-5 h-5' />
                                 </Link>
-                            </Button>
-                            <Button
-                                asChild
-                                variant='outline'
-                                size='lg'
-                                className='text-lg px-8 border-gray-300 hover:bg-gray-50'>
-                                <Link href='/login'>Login</Link>
                             </Button>
                             <Button
                                 asChild

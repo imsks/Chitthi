@@ -28,9 +28,8 @@ func SetupRouter(cfg *config.Config, conn *pgx.Conn) *gin.Engine {
 	router.Use(middleware.GinCORSMiddleware())
 
 	// Public routes
-	router.POST("/api/v1/auth/login", authHandler.LoginHandler)
+	router.POST("/api/v1/auth/google", authHandler.GoogleAuthHandler)
 	router.POST("/api/v1/auth/logout", authHandler.LogoutHandler)
-	router.POST("/api/v1/auth/register", authHandler.SignupHandler)
 
 	// Protected routes (require authentication)
 	authGroup := router.Group("/api/v1")

@@ -24,8 +24,11 @@ services:
     container_name: chitthi_web
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       NEXT_PUBLIC_API_URL: http://app:8080
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       WATCHPACK_POLLING: "true"
     depends_on:
       - app
