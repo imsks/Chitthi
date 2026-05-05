@@ -61,3 +61,15 @@ func (dao *APIKeyDAO) GetUserIDByActiveAPIKey(ctx context.Context, apiKey string
 	}
 	return userID, nil
 }
+
+// DeleteUserAPIKey deletes one Chitthi API key owned by userID. RowsAffected confirms ownership.
+func (dao *APIKeyDAO) DeleteUserAPIKey(ctx context.Context, userID uint, apiKey string) (int64, error) {
+	tag, err := dao.pool.Exec(ctx,
+		`DELETE FROM user_api_keys WHERE user_id = $1 AND api_key = $2`,
+		userID, apiKey,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
+}

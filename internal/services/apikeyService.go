@@ -32,6 +32,8 @@ func NormalizeUserAPIKeyExpiry(expiresAt string) string {
 var (
 	ErrSenderEmailRequired = errors.New("sender_email is required")
 	ErrSenderEmailInvalid  = errors.New("sender_email must be a valid email address")
+	ErrChitthiAPIKeyNotFound       = errors.New("api key not found")
+	ErrProviderCredentialNotFound  = errors.New("provider credentials not found")
 )
 
 // ValidateSenderEmail checks a minimal RFC-like shape for onboarding BYOK senders.
@@ -107,5 +109,23 @@ func (s *APIKeyServiceImpl) GetProviderAPIKeys(ctx context.Context, userID uint)
 }
 
 func (s *APIKeyServiceImpl) DeleteAPIKey(userID uint, apiKey string) error {
-	return nil // Replace with actual implementation
+	n, err := s.apiKeyDAO.DeleteUserAPIKey(context.Background(), userID, apiKey)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrChitthiAPIKeyNotFound
+	}
+	return nil
+}
+
+func (s *APIKeyServiceImpl) DeleteProviderAPIKey(ctx context.Context, userID uint, provider string) error {
+	n, err := s.providerApiKeyDAO.DeleteProviderByUserAndName(ctx, userID, provider)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrProviderCredentialNotFound
+	}
+	return nil
 }

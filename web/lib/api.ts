@@ -1,3 +1,5 @@
+import { deleteChitthiKeyPath, deleteProviderCredentialPath } from "./api-key-urls"
+
 export type User = {
 	id: number
 	name: string
@@ -83,4 +85,16 @@ export function addProviderAPIKey(provider: string, apiKey: string, senderEmail:
 
 export function getProviderAPIKeys() {
 	return apiRequest<{ providers: string[] }>("/api/v1/apikeys/provider")
+}
+
+export function deleteAPIKey(apiKey: string) {
+	return apiRequest<{ message: string }>(deleteChitthiKeyPath(apiKey), {
+		method: "DELETE"
+	})
+}
+
+export function deleteProviderAPIKey(provider: string) {
+	return apiRequest<{ message: string }>(deleteProviderCredentialPath(provider), {
+		method: "DELETE"
+	})
 }

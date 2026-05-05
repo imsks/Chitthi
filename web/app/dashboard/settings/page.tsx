@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { AlertCircle, KeyRound, RefreshCcw } from "lucide-react"
+import { AlertCircle, KeyRound, RefreshCcw, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { addProviderAPIKey, getProviderAPIKeys } from "@/lib/api"
+import { addProviderAPIKey, deleteProviderAPIKey, getProviderAPIKeys } from "@/lib/api"
 import { providerOptions } from "@/lib/dashboard"
 import { toast } from "@/hooks/use-toast"
 
@@ -21,6 +21,7 @@ export default function SettingsPage() {
 	const [senderEmail, setSenderEmail] = useState("")
 	const [loading, setLoading] = useState(true)
 	const [providerSaving, setProviderSaving] = useState(false)
+	const [removingProvider, setRemovingProvider] = useState<string | null>(null)
 	const [error, setError] = useState("")
 
 	const loadData = async () => {
@@ -28,7 +29,8 @@ export default function SettingsPage() {
 		setError("")
 		try {
 			const providerResponse = await getProviderAPIKeys()
-			setProviders(providerResponse.providers)
+			const list = providerResponse.providers
+			setProviders(Array.isArray(list) ? list : [])
 		} catch (loadError) {
 			setError(loadError instanceof Error ? loadError.message : "Unable to load settings")
 		} finally {
@@ -64,6 +66,30 @@ export default function SettingsPage() {
 			setProviderSaving(false)
 		}
 	}
+
+	const handleRemoveProvider = async (name: string) => {
+		const ok =
+			typeof window !== "undefined"
+				? window.confirm(`Remove saved credentials for ${name}? Sends that use defaults will stop until you add a key again.`)
+				: false
+		if (!ok) {
+			return
+		}
+
+		setRemovingProvider(name)
+		setError("")
+		try {
+			await deleteProviderAPIKey(name)
+			await loadData()
+			toast({ title: "Provider removed", description: `${name} credentials were deleted.` })
+		} catch (removeErr) {
+			setError(removeErr instanceof Error ? removeErr.message : "Unable to remove provider")
+		} finally {
+			setRemovingProvider(null)
+		}
+	}
+
+	const configuredProviders = Array.isArray(providers) ? providers : []
 
 	return (
 		<div className='space-y-6'>
@@ -110,11 +136,22 @@ export default function SettingsPage() {
 					<div className='flex flex-wrap gap-2'>
 						{loading ? (
 							<Badge className='bg-slate-100 text-slate-700 hover:bg-slate-100'>Loading providers...</Badge>
-						) : providers.length ? (
-							providers.map((value) => (
-								<Badge key={value} className='bg-green-100 text-green-800 hover:bg-green-100'>
-									{value}
-								</Badge>
+						) : configuredProviders.length ? (
+							configuredProviders.map((value) => (
+								<div key={value} className='inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-green-800'>
+									<span className='pl-1 text-sm capitalize'>{value}</span>
+									<Button
+										type='button'
+										variant='ghost'
+										size='sm'
+										className='h-7 w-7 shrink-0 p-0 text-green-900 hover:bg-green-200/80'
+										disabled={removingProvider === value}
+										aria-label={`Remove ${value}`}
+										onClick={() => void handleRemoveProvider(value)}
+									>
+										<Trash2 className='h-3.5 w-3.5' />
+									</Button>
+								</div>
 							))
 						) : (
 							<Badge className='bg-slate-100 text-slate-700 hover:bg-slate-100'>No provider keys saved yet</Badge>

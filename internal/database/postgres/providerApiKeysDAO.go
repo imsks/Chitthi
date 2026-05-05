@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -76,11 +77,11 @@ func (dao *ProviderAPIKeysDAO) GetProviderIDByName(ctx context.Context, provider
 func (dao *ProviderAPIKeysDAO) GetConfiguredProviderNames(ctx context.Context, userID uint) ([]string, error) {
 	rows, err := dao.pool.Query(
 		ctx,
-		`SELECT p.name
+		`SELECT (p.name)::text
 		 FROM provider_api_keys pak
 		 JOIN providers p ON pak.provider_id = p.id
 		 WHERE pak.user_id = $1
-		 ORDER BY p.name`,
+		 ORDER BY (p.name)::text`,
 		userID,
 	)
 	if err != nil {
@@ -133,4 +134,20 @@ func (dao *ProviderAPIKeysDAO) GetPrimaryProviderCredential(ctx context.Context,
 		return nil, err
 	}
 	return &cred, nil
+}
+
+// DeleteProviderByUserAndName removes BYOK credentials for one provider (enum name).
+func (dao *ProviderAPIKeysDAO) DeleteProviderByUserAndName(ctx context.Context, userID uint, providerName string) (int64, error) {
+	tag, err := dao.pool.Exec(ctx, `
+		DELETE FROM provider_api_keys pak
+		USING providers p
+		WHERE pak.provider_id = p.id
+		  AND pak.user_id = $1
+		  AND lower((p.name)::text) = lower($2)`,
+		userID, strings.TrimSpace(providerName),
+	)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
 }

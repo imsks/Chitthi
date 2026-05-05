@@ -158,7 +158,7 @@ export default function Home() {
                                     size='lg'
                                     className='bg-blue-600 hover:bg-blue-700 text-lg px-8'>
                                     <Link href='/login'>
-                                        Sign in with Google
+                                        Sign in
                                         <ArrowRight className='ml-2 w-5 h-5' />
                                     </Link>
                                 </Button>

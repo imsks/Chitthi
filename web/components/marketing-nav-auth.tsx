@@ -92,7 +92,7 @@ export function MarketingNavAuth() {
 
 	return (
 		<Button asChild className='bg-blue-600 hover:bg-blue-700'>
-			<Link href='/login'>Sign in with Google</Link>
+			<Link href='/login'>Sign in</Link>
 		</Button>
 	)
 }

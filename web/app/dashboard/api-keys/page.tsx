@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { AlertCircle, Copy, KeyRound, RefreshCcw } from "lucide-react"
+import { AlertCircle, Copy, KeyRound, RefreshCcw, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { createAPIKey, getAPIKeys } from "@/lib/api"
+import { createAPIKey, deleteAPIKey, getAPIKeys } from "@/lib/api"
 import { maskApiKey } from "@/lib/dashboard"
 import { toast } from "@/hooks/use-toast"
 
@@ -16,6 +16,7 @@ export default function ApiKeysPage() {
 	const [newKey, setNewKey] = useState("")
 	const [loading, setLoading] = useState(true)
 	const [keySaving, setKeySaving] = useState(false)
+	const [revokingKey, setRevokingKey] = useState<string | null>(null)
 	const [error, setError] = useState("")
 
 	const loadKeys = async () => {
@@ -23,7 +24,8 @@ export default function ApiKeysPage() {
 		setError("")
 		try {
 			const keyResponse = await getAPIKeys()
-			setApiKeys(keyResponse.api_keys)
+			const list = keyResponse.api_keys
+			setApiKeys(Array.isArray(list) ? list : [])
 		} catch (loadError) {
 			setError(loadError instanceof Error ? loadError.message : "Unable to load API keys")
 		} finally {
@@ -54,6 +56,33 @@ export default function ApiKeysPage() {
 		await navigator.clipboard.writeText(value)
 		toast({ title: `${label} copied`, description: "The value has been copied to your clipboard." })
 	}
+
+	const handleRevokeKey = async (key: string) => {
+		const ok =
+			typeof window !== "undefined"
+				? window.confirm("Revoke this Chitthi API key? Apps using it will stop working immediately.")
+				: false
+		if (!ok) {
+			return
+		}
+
+		setRevokingKey(key)
+		setError("")
+		try {
+			await deleteAPIKey(key)
+			if (newKey === key) {
+				setNewKey("")
+			}
+			await loadKeys()
+			toast({ title: "Key revoked", description: "The API key has been removed." })
+		} catch (revokeErr) {
+			setError(revokeErr instanceof Error ? revokeErr.message : "Unable to revoke API key")
+		} finally {
+			setRevokingKey(null)
+		}
+	}
+
+	const listedKeys = Array.isArray(apiKeys) ? apiKeys : []
 
 	return (
 		<div className='space-y-6'>
@@ -95,14 +124,26 @@ export default function ApiKeysPage() {
 					<div className='space-y-3'>
 						{loading ? (
 							<p className='text-sm text-gray-600'>Loading API keys...</p>
-						) : apiKeys.length ? (
-							apiKeys.map((key) => (
-								<div key={key} className='flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3'>
-									<code className='text-sm text-gray-700'>{maskApiKey(key)}</code>
-									<Button variant='outline' size='sm' className='border-blue-200 hover:bg-blue-50' onClick={() => void copyValue(key, "API key")}>
-										<Copy className='mr-2 h-4 w-4' />
-										Copy
-									</Button>
+						) : listedKeys.length ? (
+							listedKeys.map((key) => (
+								<div key={key} className='flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3'>
+									<code className='min-w-0 flex-1 truncate text-sm text-gray-700'>{maskApiKey(key)}</code>
+									<div className='flex shrink-0 gap-2'>
+										<Button variant='outline' size='sm' className='border-blue-200 hover:bg-blue-50' onClick={() => void copyValue(key, "API key")}>
+											<Copy className='mr-2 h-4 w-4' />
+											Copy
+										</Button>
+										<Button
+											variant='outline'
+											size='sm'
+											className='border-red-200 text-red-700 hover:bg-red-50'
+											disabled={revokingKey === key}
+											onClick={() => void handleRevokeKey(key)}
+										>
+											<Trash2 className='mr-2 h-4 w-4' />
+											Revoke
+										</Button>
+									</div>
 								</div>
 							))
 						) : (

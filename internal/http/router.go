@@ -61,6 +61,7 @@ func SetupRouter(cfg *config.Config, pool *pgxpool.Pool, version string) *gin.En
 		authGroup.POST("/apikeys/provider", apiKeyHandler.AddProviderAPIKeyHandler)
 		authGroup.GET("/apikeys", apiKeyHandler.GetAPIKeysHandler)
 		authGroup.GET("/apikeys/provider", apiKeyHandler.GetProviderAPIKeysHandler)
+		authGroup.DELETE("/apikeys/provider/:provider", apiKeyHandler.DeleteProviderAPIKeyHandler)
 		authGroup.DELETE("/apikeys/:api_key", apiKeyHandler.DeleteAPIKeyHandler)
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/imsks/chitthi/internal/services"
@@ -15,6 +16,7 @@ type APIKeyService interface {
 	DeleteAPIKey(userID uint, apiKey string) error
 	AddProviderAPIKey(ctx context.Context, userID uint, provider string, apiKey string, senderEmail string) error
 	GetProviderAPIKeys(ctx context.Context, userID uint) ([]string, error)
+	DeleteProviderAPIKey(ctx context.Context, userID uint, provider string) error
 }
 
 type APIKeyHandler struct {
@@ -47,7 +49,12 @@ func (h *APIKeyHandler) CreateAPIKeyHandler(c *gin.Context) {
 }
 
 func (h *APIKeyHandler) AddProviderAPIKeyHandler(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(401, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := userIDVal.(uint)
 
 	var apiKeyRequest AddProviderAPIKeyRequest
 	if err := c.ShouldBindJSON(&apiKeyRequest); err != nil {
@@ -89,15 +96,49 @@ func (h *APIKeyHandler) GetAPIKeysHandler(c *gin.Context) {
 }
 
 func (h *APIKeyHandler) GetProviderAPIKeysHandler(c *gin.Context) {
-	userID := c.GetUint("user_id")
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(401, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := userIDVal.(uint)
 
 	providers, err := h.apiKeyService.GetProviderAPIKeys(c.Request.Context(), userID)
 	if err != nil {
+		log.Printf("GetProviderAPIKeys uid=%d err=%v", userID, err)
 		c.JSON(500, gin.H{"error": "Failed to fetch provider API keys"})
 		return
 	}
 
 	c.JSON(200, gin.H{"providers": providers})
+}
+
+func (h *APIKeyHandler) DeleteProviderAPIKeyHandler(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(401, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := userIDVal.(uint)
+
+	provider := strings.TrimSpace(c.Param("provider"))
+	if provider == "" {
+		c.JSON(400, gin.H{"error": "provider is required"})
+		return
+	}
+
+	err := h.apiKeyService.DeleteProviderAPIKey(c.Request.Context(), userID, provider)
+	if err != nil {
+		if errors.Is(err, services.ErrProviderCredentialNotFound) {
+			c.JSON(404, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("DeleteProviderAPIKey uid=%d provider=%q err=%v", userID, provider, err)
+		c.JSON(500, gin.H{"error": "Failed to remove provider credentials"})
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "Provider credentials removed"})
 }
 
 func (h *APIKeyHandler) DeleteAPIKeyHandler(c *gin.Context) {
@@ -117,6 +158,11 @@ func (h *APIKeyHandler) DeleteAPIKeyHandler(c *gin.Context) {
 	// Implement logic to delete the specified API key for the user from the database
 	err := h.apiKeyService.DeleteAPIKey(userID.(uint), apiKey)
 	if err != nil {
+		if errors.Is(err, services.ErrChitthiAPIKeyNotFound) {
+			c.JSON(404, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("DeleteAPIKey uid=%d err=%v", userID, err)
 		c.JSON(500, gin.H{"error": "Failed to delete API key"})
 		return
 	}
