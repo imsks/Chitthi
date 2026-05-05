@@ -4,24 +4,31 @@ import (
 	"context"
 	"log"
 
-	"github.com/jackc/pgx/v5"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func InitPostgres(dsn string) (*pgx.Conn, error) {
+// InitPostgres returns a concurrent-safe pool. A single pgx.Conn must not be shared across goroutines (causes "conn busy").
+func InitPostgres(dsn string) (*pgxpool.Pool, error) {
 	log.Println("dsn", dsn)
-	conn, err := pgx.Connect(context.Background(), dsn)
+	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, err
 	}
-
-	log.Println("✅ Connected to PostgreSQL")
-	return conn, nil
+	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
+	if err != nil {
+		return nil, err
+	}
+	if err := pool.Ping(context.Background()); err != nil {
+		pool.Close()
+		return nil, err
+	}
+	log.Println("✅ Connected to PostgreSQL (pool)")
+	return pool, nil
 }
 
-func Close(conn *pgx.Conn) {
-	if conn != nil {
-		conn.Close(context.Background())
-		log.Println("🔌 Closed PostgreSQL connection")
+func Close(pool *pgxpool.Pool) {
+	if pool != nil {
+		pool.Close()
+		log.Println("🔌 Closed PostgreSQL pool")
 	}
 }

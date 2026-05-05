@@ -4,21 +4,21 @@ import (
 	"context"
 
 	"github.com/imsks/chitthi/internal/model"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserDAO struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
-func NewUserDAO(conn *pgx.Conn) *UserDAO {
-	return &UserDAO{conn: conn}
+func NewUserDAO(pool *pgxpool.Pool) *UserDAO {
+	return &UserDAO{pool: pool}
 }
 
 // CreateUserGoogle inserts a user created via Google Sign-In (no password).
 func (dao *UserDAO) CreateUserGoogle(ctx context.Context, user model.User) (int64, error) {
 	var userID int64
-	err := dao.conn.QueryRow(
+	err := dao.pool.QueryRow(
 		ctx,
 		`INSERT INTO users (name, email, password_hash, is_onboarded, profession)
 		 VALUES ($1, $2, NULL, $3, $4) RETURNING id`,
@@ -32,7 +32,7 @@ func (dao *UserDAO) CreateUserGoogle(ctx context.Context, user model.User) (int6
 
 func (dao *UserDAO) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
-	err := dao.conn.QueryRow(
+	err := dao.pool.QueryRow(
 		ctx,
 		`SELECT id, name, email, is_onboarded, profession, created_at, updated_at
 		 FROM users WHERE email = $1`,
@@ -45,13 +45,13 @@ func (dao *UserDAO) GetUserByEmail(ctx context.Context, email string) (*model.Us
 }
 
 func (dao *UserDAO) UpdateOnboardingStatus(ctx context.Context, userID uint, isOnboarded bool) error {
-	_, err := dao.conn.Exec(ctx, "UPDATE users SET is_onboarded = $1 WHERE id = $2", isOnboarded, userID)
+	_, err := dao.pool.Exec(ctx, "UPDATE users SET is_onboarded = $1 WHERE id = $2", isOnboarded, userID)
 	return err
 }
 
 func (dao *UserDAO) UpsertGoogleUser(ctx context.Context, name, email string) (*model.User, error) {
 	var user model.User
-	err := dao.conn.QueryRow(
+	err := dao.pool.QueryRow(
 		ctx,
 		`INSERT INTO users (name, email, password_hash, is_onboarded, profession)
 		 VALUES ($1, $2, NULL, FALSE, NULL)
@@ -69,7 +69,7 @@ func (dao *UserDAO) UpsertGoogleUser(ctx context.Context, name, email string) (*
 
 func (dao *UserDAO) GetUserByID(ctx context.Context, userID uint) (*model.User, error) {
 	var user model.User
-	err := dao.conn.QueryRow(
+	err := dao.pool.QueryRow(
 		ctx,
 		`SELECT id, name, email, is_onboarded, profession, created_at, updated_at
 		 FROM users WHERE id = $1`,

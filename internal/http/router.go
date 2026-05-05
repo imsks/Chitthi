@@ -11,14 +11,14 @@ import (
 	"github.com/imsks/chitthi/internal/middleware"
 	"github.com/imsks/chitthi/internal/modules/email"
 	"github.com/imsks/chitthi/internal/services"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // SetupRouter configures all HTTP routes on a single Gin engine (including /send-email).
-func SetupRouter(cfg *config.Config, conn *pgx.Conn, version string) *gin.Engine {
-	userDAO := postgres.NewUserDAO(conn)
-	providerAPIKeysDAO := postgres.NewProviderAPIKeysDAO(conn)
-	apiKeysDAO := postgres.NewAPIKeyDAO(conn)
+func SetupRouter(cfg *config.Config, pool *pgxpool.Pool, version string) *gin.Engine {
+	userDAO := postgres.NewUserDAO(pool)
+	providerAPIKeysDAO := postgres.NewProviderAPIKeysDAO(pool)
+	apiKeysDAO := postgres.NewAPIKeyDAO(pool)
 
 	userService := services.NewUserService(userDAO)
 	providerAPIKeysService := services.NewAPIKeyService(apiKeysDAO, providerAPIKeysDAO)

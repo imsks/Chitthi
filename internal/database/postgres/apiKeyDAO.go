@@ -3,15 +3,15 @@ package postgres
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type APIKeyDAO struct {
-	conn *pgx.Conn
+	pool *pgxpool.Pool
 }
 
-func NewAPIKeyDAO(conn *pgx.Conn) *APIKeyDAO {
-	return &APIKeyDAO{conn: conn}
+func NewAPIKeyDAO(pool *pgxpool.Pool) *APIKeyDAO {
+	return &APIKeyDAO{pool: pool}
 }
 
 func (dao *APIKeyDAO) CreateAPIKey(ctx context.Context, userID uint, apiKey string, expiresAt string) (int64, error) {
@@ -19,9 +19,9 @@ func (dao *APIKeyDAO) CreateAPIKey(ctx context.Context, userID uint, apiKey stri
 	query := "INSERT INTO user_api_keys (user_id, api_key, expires_at) VALUES ($1, $2, $3) RETURNING id"
 	var err error
 	if expiresAt == "" {
-		err = dao.conn.QueryRow(ctx, query, userID, apiKey, nil).Scan(&apiKeyID)
+		err = dao.pool.QueryRow(ctx, query, userID, apiKey, nil).Scan(&apiKeyID)
 	} else {
-		err = dao.conn.QueryRow(ctx, query, userID, apiKey, expiresAt).Scan(&apiKeyID)
+		err = dao.pool.QueryRow(ctx, query, userID, apiKey, expiresAt).Scan(&apiKeyID)
 	}
 	if err != nil {
 		return 0, err
@@ -31,7 +31,7 @@ func (dao *APIKeyDAO) CreateAPIKey(ctx context.Context, userID uint, apiKey stri
 
 func (dao *APIKeyDAO) GetAPIKeys(ctx context.Context, userID uint) ([]string, error) {
 	// Implement logic to fetch all API keys for a given user from the user_api_keys table
-	rows, err := dao.conn.Query(ctx, "SELECT api_key FROM user_api_keys WHERE user_id = $1", userID)
+	rows, err := dao.pool.Query(ctx, "SELECT api_key FROM user_api_keys WHERE user_id = $1", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (dao *APIKeyDAO) GetAPIKeys(ctx context.Context, userID uint) ([]string, er
 // GetUserIDByActiveAPIKey resolves a non-expired Chitthi API key to its owner user id.
 func (dao *APIKeyDAO) GetUserIDByActiveAPIKey(ctx context.Context, apiKey string) (uint, error) {
 	var userID uint
-	err := dao.conn.QueryRow(ctx,
+	err := dao.pool.QueryRow(ctx,
 		`SELECT user_id FROM user_api_keys
 		 WHERE api_key = $1 AND (expires_at IS NULL OR expires_at > NOW())`,
 		apiKey,
