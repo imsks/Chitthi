@@ -1,5 +1,6 @@
 .env
 tmp/
+.github
 
 # Web dependencies
 web/node_modules
