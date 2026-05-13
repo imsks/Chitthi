@@ -75,3 +75,40 @@ func (r *ChitthiResolver) Resolve(ctx context.Context, chitthiAPIKey string) (ma
 	}
 	return m, strings.TrimSpace(cred.SenderEmail), nil
 }
+
+// ResolveAll validates the Chitthi key and returns all supported provider credentials for failover.
+func (r *ChitthiResolver) ResolveAll(ctx context.Context, chitthiAPIKey string) ([]*postgres.PrimaryProviderCredential, error) {
+	if r == nil || r.apiKeyDAO == nil || r.providerDAO == nil {
+		return nil, fmt.Errorf("chitthi resolver not configured")
+	}
+
+	userID, err := r.apiKeyDAO.GetUserIDByActiveAPIKey(ctx, strings.TrimSpace(chitthiAPIKey))
+	if err != nil {
+		return nil, fmt.Errorf("invalid or expired Chitthi API key")
+	}
+
+	credentials, err := r.providerDAO.GetAllProviderCredentials(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("no provider credentials configured for this account")
+	}
+
+	usable := make([]*postgres.PrimaryProviderCredential, 0, len(credentials))
+	for _, cred := range credentials {
+		if cred == nil {
+			continue
+		}
+		if len(mapPrimaryCredential(cred)) == 0 {
+			continue
+		}
+		if strings.TrimSpace(cred.SenderEmail) == "" {
+			continue
+		}
+		usable = append(usable, cred)
+	}
+
+	if len(usable) == 0 {
+		return nil, fmt.Errorf("no usable provider credentials configured for this account")
+	}
+
+	return usable, nil
+}

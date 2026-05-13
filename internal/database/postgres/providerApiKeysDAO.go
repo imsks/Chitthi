@@ -136,6 +136,48 @@ func (dao *ProviderAPIKeysDAO) GetPrimaryProviderCredential(ctx context.Context,
 	return &cred, nil
 }
 
+// GetAllProviderCredentials returns all supported BYOK credentials ordered by failover priority.
+func (dao *ProviderAPIKeysDAO) GetAllProviderCredentials(ctx context.Context, userID uint) ([]*PrimaryProviderCredential, error) {
+	rows, err := dao.pool.Query(ctx,
+		`SELECT p.name::text, pak.api_key, pak.sender_email
+		 FROM provider_api_keys pak
+		 JOIN providers p ON p.id = pak.provider_id
+		 WHERE pak.user_id = $1
+		   AND p.name IN ('sendgrid', 'breevo', 'mailersend')
+		 ORDER BY
+		   CASE p.name
+		     WHEN 'sendgrid' THEN 1
+		     WHEN 'breevo' THEN 2
+		     WHEN 'mailersend' THEN 3
+		     ELSE 4
+		   END`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	credentials := make([]*PrimaryProviderCredential, 0)
+	for rows.Next() {
+		cred := &PrimaryProviderCredential{}
+		if err := rows.Scan(&cred.ProviderName, &cred.APIKey, &cred.SenderEmail); err != nil {
+			return nil, err
+		}
+		credentials = append(credentials, cred)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if len(credentials) == 0 {
+		return nil, fmt.Errorf("no supported provider credentials for user")
+	}
+
+	return credentials, nil
+}
+
 // DeleteProviderByUserAndName removes BYOK credentials for one provider (enum name).
 func (dao *ProviderAPIKeysDAO) DeleteProviderByUserAndName(ctx context.Context, userID uint, providerName string) (int64, error) {
 	tag, err := dao.pool.Exec(ctx, `

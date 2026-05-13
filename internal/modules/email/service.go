@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/imsks/chitthi/internal/config"
+	"github.com/imsks/chitthi/internal/database/postgres"
 	adapters "github.com/imsks/chitthi/internal/email"
 	"github.com/imsks/chitthi/internal/model"
 )
@@ -216,6 +218,90 @@ func (s *Service) SendEmail(_ context.Context, req *EmailRequest) *SendEmailResu
 			SentFrom: req.FromEmail,
 			Subject:  req.Subject,
 			Provider: providerName,
+		},
+	}
+}
+
+// SendEmailWithProviders sends an email using DB-backed provider credentials with failover.
+func (s *Service) SendEmailWithProviders(_ context.Context, req *EmailRequest, credentials []*postgres.PrimaryProviderCredential) *SendEmailResult {
+	if len(credentials) == 0 {
+		return &SendEmailResult{
+			Success: false,
+			Error:   fmt.Errorf("no provider credentials available"),
+			EmailData: &model.EmailData{
+				SentTo:   req.ToEmail,
+				SentFrom: req.FromEmail,
+				Subject:  req.Subject,
+			},
+		}
+	}
+
+	baseReq := model.EmailRequest{
+		FromEmail:   req.FromEmail,
+		FromName:    req.FromName,
+		ToEmail:     req.ToEmail,
+		ToName:      req.ToName,
+		Subject:     req.Subject,
+		HTMLContent: req.HTMLContent,
+	}
+
+	var lastErr error
+	for _, cred := range credentials {
+		credMap := mapPrimaryCredential(cred)
+		if len(credMap) == 0 {
+			lastErr = fmt.Errorf("unsupported provider: %s", cred.ProviderName)
+			continue
+		}
+
+		providers := s.createProvidersFromHeaders(credMap)
+		if len(providers) == 0 {
+			lastErr = fmt.Errorf("no provider created for %s", cred.ProviderName)
+			continue
+		}
+
+		provider := providers[0]
+		emailReq := baseReq
+		if strings.TrimSpace(emailReq.FromEmail) == "" {
+			emailReq.FromEmail = strings.TrimSpace(cred.SenderEmail)
+		}
+
+		if strings.TrimSpace(emailReq.FromEmail) == "" {
+			lastErr = fmt.Errorf("sender email missing for provider %s", provider.GetName())
+			continue
+		}
+
+		if err := provider.SendEmail(emailReq); err != nil {
+			lastErr = err
+			log.Printf("⚠️  Provider %s failed: %v", provider.GetName(), err)
+			continue
+		}
+
+		log.Printf("📧 Email sent successfully via provider: %s", provider.GetName())
+		return &SendEmailResult{
+			Success:  true,
+			Provider: provider.GetName(),
+			EmailData: &model.EmailData{
+				SentTo:   req.ToEmail,
+				SentFrom: emailReq.FromEmail,
+				Subject:  req.Subject,
+				Provider: provider.GetName(),
+			},
+		}
+	}
+
+	if lastErr == nil {
+		lastErr = fmt.Errorf("all providers failed")
+	}
+
+	return &SendEmailResult{
+		Success:  false,
+		Error:    fmt.Errorf("all configured providers failed: %w", lastErr),
+		Provider: "all_failed",
+		EmailData: &model.EmailData{
+			SentTo:   req.ToEmail,
+			SentFrom: req.FromEmail,
+			Subject:  req.Subject,
+			Provider: "all_failed",
 		},
 	}
 }
