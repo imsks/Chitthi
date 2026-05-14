@@ -17,19 +17,6 @@ func NewHandler(service *Service, resolver *ChitthiResolver) *Handler {
 	return &Handler{service: service, resolver: resolver}
 }
 
-func hasExplicitBYOK(credentials map[string]string, req *EmailRequest) bool {
-	if credentials == nil {
-		return false
-	}
-	if credentials["breevo_api_key"] != "" || credentials["sendgrid_api_key"] != "" || credentials["mailersend_api_key"] != "" {
-		return true
-	}
-	if req.BreevoAPIKey != "" || req.SendGridAPIKey != "" || req.MailerSendAPIKey != "" {
-		return true
-	}
-	return false
-}
-
 func (h *Handler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		utils.SendEmailErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed", "METHOD_NOT_ALLOWED")
@@ -42,43 +29,28 @@ func (h *Handler) SendEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.ToEmail == "" || req.Subject == "" {
-		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "Missing required fields: to_email and subject", "MISSING_REQUIRED_FIELDS")
+	if strings.TrimSpace(req.APIKey) == "" || strings.TrimSpace(req.ToEmail) == "" || strings.TrimSpace(req.Subject) == "" || strings.TrimSpace(req.HTMLContent) == "" {
+		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "Missing required fields: api_key, to_email, subject and html_content", "MISSING_REQUIRED_FIELDS")
 		return
 	}
 
-	credentials := extractCredentialsFromHeaders(r)
+	if h.resolver == nil {
+		utils.SendEmailErrorResponse(w, http.StatusInternalServerError, "Email resolver is not configured", "EMAIL_RESOLVER_NOT_CONFIGURED")
+		return
+	}
 
-	chitthiKey := ExtractChitthiAPIKey(r)
-	if chitthiKey != "" && !hasExplicitBYOK(credentials, &req) && h.resolver != nil {
-		credExtra, defaultFrom, err := h.resolver.Resolve(r.Context(), chitthiKey)
-		if err != nil {
-			msg := err.Error()
-			if strings.Contains(msg, "invalid or expired Chitthi API key") {
-				utils.SendEmailErrorResponse(w, http.StatusUnauthorized, msg, "CHITTHI_KEY_INVALID")
-			} else {
-				utils.SendEmailErrorResponse(w, http.StatusBadRequest, msg, "CHITTHI_RESOLVE_FAILED")
-			}
+	providerCredentials, err := h.resolver.ResolveAll(r.Context(), req.APIKey)
+	if err != nil {
+		msg := err.Error()
+		if strings.Contains(msg, "invalid or expired Chitthi API key") {
+			utils.SendEmailErrorResponse(w, http.StatusUnauthorized, msg, "CHITTHI_KEY_INVALID")
 			return
 		}
-		for k, v := range credExtra {
-			credentials[k] = v
-		}
-		if strings.TrimSpace(req.FromEmail) == "" && defaultFrom != "" {
-			req.FromEmail = defaultFrom
-		}
-	}
-
-	hasCredentials := len(credentials) > 0 || req.BreevoAPIKey != "" || req.SendGridAPIKey != "" || req.MailerSendAPIKey != ""
-
-	if !hasCredentials {
-		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "No email provider credentials provided. Send a Chitthi API key (Authorization Bearer or X-Chitthi-API-Key), or pass provider keys in headers or request body.", "NO_CREDENTIALS_PROVIDED")
+		utils.SendEmailErrorResponse(w, http.StatusUnprocessableEntity, msg, "CHITTHI_PROVIDER_RESOLVE_FAILED")
 		return
 	}
 
-	req.Credentials = credentials
-
-	result := h.service.SendEmail(r.Context(), &req)
+	result := h.service.SendEmailWithProviders(r.Context(), &req, providerCredentials)
 
 	if !result.Success {
 		utils.SendEmailErrorResponse(w, http.StatusInternalServerError, "Failed to send email: "+result.Error.Error(), "EMAIL_SEND_FAILED")
@@ -86,23 +58,4 @@ func (h *Handler) SendEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.SendEmailSuccessResponse(w, result.EmailData)
-}
-
-func extractCredentialsFromHeaders(r *http.Request) map[string]string {
-	credentials := make(map[string]string)
-
-	if apiKey := r.Header.Get("X-Breevo-API-Key"); apiKey != "" {
-		credentials["breevo_api_key"] = apiKey
-	}
-	if apiKey := r.Header.Get("X-SendGrid-API-Key"); apiKey != "" {
-		credentials["sendgrid_api_key"] = apiKey
-	}
-	if region := r.Header.Get("X-SendGrid-Region"); region != "" {
-		credentials["sendgrid_region"] = region
-	}
-	if apiKey := r.Header.Get("X-MailerSend-API-Key"); apiKey != "" {
-		credentials["mailersend_api_key"] = apiKey
-	}
-
-	return credentials
 }

@@ -14,7 +14,7 @@ info:
     - HttpOnly `jwt` cookie set by `POST /api/v1/auth/google`
     - `Authorization: Bearer <jwt>` header (Chitthi session JWT).
 
-    For `POST /send-email` only, `Authorization: Bearer <chitthi_api_key>` may instead be your unified Chitthi API key (or use header `X-Chitthi-API-Key`). That path does not use JWT.
+    For `POST /send-email` only, send your unified Chitthi API key in the JSON body as `api_key`. That path does not use JWT.
 
     After **NextAuth** Google sign-in, the app calls `POST /api/v1/auth/upsert` with a Google ID token to create or update the user in the database (no session cookie).
   version: v1.0.0
@@ -339,47 +339,18 @@ paths:
         - Email
       summary: Send an email via a BYOK provider
       description: |
-        Sends an email using credentials you supply or using your **Chitthi API key**.
+        Sends an email using your stored BYOK provider credentials resolved from a **Chitthi API key**.
 
-        ### Chitthi API key (BYOK from dashboard)
-        If you send `Authorization: Bearer <your_chitthi_api_key>` or `X-Chitthi-API-Key: <key>`, and do **not** pass provider API keys in headers or body, Chitthi resolves your user, uses your stored provider credential (SendGrid, Breevo, or MailerSend in that priority order), and fills `from_email` from your saved verified sender email when the JSON body omits it.
-
-        ### Explicit provider keys
-        Credentials can be passed via request headers or in the request body. When provider keys are present, they take precedence over the Chitthi key.
+        ### Request contract
+        Include `api_key` in the JSON body along with email fields.
+        Chitthi resolves your user from this key, loads all configured provider credentials,
+        then attempts provider failover in this priority order.
 
         ### Provider priority (when resolving stored credentials)
         1. **SendGrid**
         2. **Breevo**
         3. **MailerSend**
-
-        Server-configured environment provider keys remain available as fallback when no credentials are detected.
       operationId: sendEmail
-      parameters:
-        - name: X-Breevo-API-Key
-          in: header
-          description: Breevo (Sendinblue) API key
-          schema:
-            type: string
-        - name: X-SendGrid-API-Key
-          in: header
-          description: SendGrid API key
-          schema:
-            type: string
-        - name: X-SendGrid-Region
-          in: header
-          description: SendGrid region (e.g. `eu`)
-          schema:
-            type: string
-        - name: X-MailerSend-API-Key
-          in: header
-          description: MailerSend API key
-          schema:
-            type: string
-        - name: X-Chitthi-API-Key
-          in: header
-          description: Unified Chitthi API key (alternative to `Authorization: Bearer` with the same token)
-          schema:
-            type: string
       requestBody:
         required: true
         content:
@@ -387,13 +358,13 @@ paths:
             schema:
               $ref: '#/components/schemas/SendEmailRequest'
             example:
+              api_key: ck_live_abc123xyz
               from_email: sender@example.com
               from_name: Sender Name
               to_email: recipient@example.com
               to_name: Recipient Name
               subject: Hello from Chitthi
               html_content: '<h1>Hello!</h1><p>This is a test email.</p>'
-              provider: sendgrid
       responses:
         '200':
           description: Email sent successfully
@@ -402,7 +373,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EmailResponse'
         '400':
-          description: Bad request (invalid JSON, missing fields, or no credentials provided)
+          description: Bad request (invalid JSON or missing required fields)
           content:
             application/json:
               schema:
@@ -421,14 +392,31 @@ paths:
                     message: Missing required fields
                     error:
                       code: MISSING_REQUIRED_FIELDS
-                      message: 'Missing required fields: to_email and subject'
-                no_credentials:
-                  value:
-                    status: false
-                    message: No credentials provided
-                    error:
-                      code: NO_CREDENTIALS_PROVIDED
-                      message: No email provider credentials provided.
+                      message: 'Missing required fields: api_key, to_email, subject and html_content'
+        '401':
+          description: Invalid or expired Chitthi API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailErrorResponse'
+              example:
+                status: false
+                message: invalid or expired Chitthi API key
+                error:
+                  code: CHITTHI_KEY_INVALID
+                  message: invalid or expired Chitthi API key
+        '422':
+          description: API key is valid but provider credentials are not configured/usable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailErrorResponse'
+              example:
+                status: false
+                message: no provider credentials configured for this account
+                error:
+                  code: CHITTHI_PROVIDER_RESOLVE_FAILED
+                  message: no provider credentials configured for this account
         '405':
           description: Method not allowed
           content:
@@ -571,9 +559,15 @@ components:
     SendEmailRequest:
       type: object
       required:
+        - api_key
         - to_email
         - subject
+        - html_content
       properties:
+        api_key:
+          type: string
+          description: Unified Chitthi API key generated from dashboard
+          example: ck_live_abc123xyz
         from_email:
           type: string
           format: email
@@ -596,21 +590,12 @@ components:
           example: '<h1>Hello!</h1>'
         provider:
           type: string
-          description: Explicitly specify the provider to use
+          description: Optional provider hint
           enum:
             - sendgrid
             - breevo
             - mailersend
           example: sendgrid
-        breevo_api_key:
-          type: string
-          description: Breevo API key (alternative to X-Breevo-API-Key header)
-        sendgrid_api_key:
-          type: string
-          description: SendGrid API key (alternative to X-SendGrid-API-Key header)
-        mailersend_api_key:
-          type: string
-          description: MailerSend API key (alternative to X-MailerSend-API-Key header)
 
     EmailResponse:
       type: object

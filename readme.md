@@ -110,8 +110,8 @@ Use the `-U` / `-d` values that match your `DATABASE_URL`. Passwords with specia
 ```bash
 curl -X POST http://localhost:8080/send-email \
   -H "Content-Type: application/json" \
-  -H "X-SendGrid-API-Key: your-sendgrid-key" \
   -d '{
+    "api_key": "YOUR_CHITTHI_API_KEY",
     "from_email": "verified-sender@yourdomain.com",
     "to_email": "recipient@example.com",
     "subject": "Test Email",
@@ -119,13 +119,13 @@ curl -X POST http://localhost:8080/send-email \
   }'
 ```
 
-Or with your **Chitthi API key** (stored provider + verified sender; `from_email` optional):
+Or with saved verified sender auto-fill (`from_email` omitted):
 
 ```bash
 curl -X POST http://localhost:8080/send-email \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_CHITTHI_API_KEY" \
   -d '{
+    "api_key": "YOUR_CHITTHI_API_KEY",
     "to_email": "recipient@example.com",
     "subject": "Test Email",
     "html_content": "<h1>Hello</h1>"
@@ -138,19 +138,20 @@ curl -X POST http://localhost:8080/send-email \
 
 | Method | Endpoint | Description |
 | ------ | -------- | ----------- |
-| `POST` | `/send-email` | Send via Chitthi API key, or SendGrid/Breevo/MailerSend headers |
+| `POST` | `/send-email` | Send via Chitthi API key in request body with DB-backed provider failover |
 | `GET` | `/` | Health |
 
 ### `POST /send-email`
 
-**Option A — Chitthi key:** `Authorization: Bearer <key>` or `X-Chitthi-API-Key`.
+**Required:** `api_key`, `to_email`, `subject`, `html_content` in JSON body.
 
-**Option B — Provider:** `Content-Type: application/json` plus `X-SendGrid-API-Key`, `X-Breevo-API-Key`, or `X-MailerSend-API-Key` (or the same keys in the JSON body).
+Provider credentials are loaded from DB using `api_key`, then attempted with failover priority: SendGrid → Breevo → MailerSend.
 
 **Body (example):**
 
 ```json
 {
+  "api_key": "YOUR_CHITTHI_API_KEY",
     "from_email": "sender@example.com",
     "from_name": "Sender",
     "to_email": "recipient@example.com",
@@ -179,22 +180,21 @@ curl -X POST http://localhost:8080/send-email \
 
 ## Providers
 
-| Provider | Header |
-| -------- | ------ |
-| SendGrid | `X-SendGrid-API-Key` |
-| Breevo | `X-Breevo-API-Key` |
-| MailerSend | `X-MailerSend-API-Key` |
+| Provider | Resolution |
+| -------- | ---------- |
+| SendGrid | Attempted first if configured for the api_key owner |
+| Breevo | Attempted second if SendGrid fails |
+| MailerSend | Attempted third if previous providers fail |
 
-**SendGrid example**
+**Send-email example**
 
 ```bash
 curl -X POST http://localhost:8080/send-email \
   -H "Content-Type: application/json" \
-  -H "X-SendGrid-API-Key: your-key" \
-  -d '{"from_email":"a@b.com","to_email":"c@d.com","subject":"Hi","html_content":"<p>Hi</p>"}'
+  -d '{"api_key":"YOUR_CHITTHI_API_KEY","to_email":"c@d.com","subject":"Hi","html_content":"<p>Hi</p>"}'
 ```
 
-Resolution order: explicit provider credentials first, otherwise Chitthi API key resolves stored credentials; optional env-configured keys in `.env` as fallback.
+Resolution order: Chitthi API key resolves stored credentials and sends with failover in provider priority order.
 
 ---
 

@@ -51,6 +51,7 @@ services:
 
   redis:
     image: redis:7
+    platform: "linux/amd64"
     container_name: chitthi_redis
     ports:
       # Host port (avoid clash if another Redis uses 6379). In Compose, use host name `redis` and port 6379.
@@ -69,6 +70,7 @@ services:
 
   db:
     image: postgres:15
+    platform: "linux/amd64"
     container_name: chitthi_db
     env_file:
       - .env

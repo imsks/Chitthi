@@ -2,6 +2,7 @@ package email
 
 // EmailRequest represents an email sending request
 type EmailRequest struct {
+	APIKey      string            `json:"api_key,omitempty"`
 	FromEmail   string            `json:"from_email"`
 	FromName    string            `json:"from_name"`
 	ToEmail     string            `json:"to_email"`
