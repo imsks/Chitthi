@@ -151,9 +151,19 @@ export default function ApiKeysPage() {
 			) : null}
 
 			<Card className='border-blue-100 bg-white/95'>
-				<CardHeader>
-					<CardTitle>Your keys</CardTitle>
-					<CardDescription>Each active key expires one year after creation unless you supplied a custom expiry via the API. Only the full value is visible at creation time.</CardDescription>
+				<CardHeader className='flex flex-col gap-4 space-y-0 sm:flex-row sm:items-start sm:justify-between'>
+					<div className='space-y-1.5'>
+						<CardTitle>Your keys</CardTitle>
+						<CardDescription>Each active key expires one year after creation unless you supplied a custom expiry via the API. Only the full value is visible at creation time.</CardDescription>
+					</div>
+					<Button
+						disabled={keySaving}
+						onClick={() => void handleCreateKey()}
+						className='w-full shrink-0 bg-blue-600 hover:bg-blue-700 sm:w-auto'
+					>
+						<KeyRound className='mr-2 h-4 w-4' />
+						{keySaving ? "Generating..." : "Generate new API key"}
+					</Button>
 				</CardHeader>
 				<CardContent className='space-y-5'>
 					<div className='space-y-3'>
@@ -185,10 +195,6 @@ export default function ApiKeysPage() {
 							<p className='text-sm text-gray-600'>No Chitthi API keys created yet.</p>
 						)}
 					</div>
-					<Button disabled={keySaving} onClick={() => void handleCreateKey()} className='w-full bg-blue-600 hover:bg-blue-700'>
-						<KeyRound className='mr-2 h-4 w-4' />
-						{keySaving ? "Generating..." : "Generate new API key"}
-					</Button>
 					{newKey ? (
 						<Card className='border-green-200 bg-green-50'>
 							<CardContent className='space-y-3 p-4'>
