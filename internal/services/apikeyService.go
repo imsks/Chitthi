@@ -108,6 +108,15 @@ func (s *APIKeyServiceImpl) GetProviderAPIKeys(ctx context.Context, userID uint)
 	return s.providerApiKeyDAO.GetConfiguredProviderNames(ctx, userID)
 }
 
+// GetDefaultSenderEmail returns the verified sender for the user's primary unified-send provider, if any.
+func (s *APIKeyServiceImpl) GetDefaultSenderEmail(ctx context.Context, userID uint) (string, error) {
+	cred, err := s.providerApiKeyDAO.GetPrimaryProviderCredential(ctx, userID)
+	if err != nil || cred == nil {
+		return "", nil
+	}
+	return strings.TrimSpace(cred.SenderEmail), nil
+}
+
 func (s *APIKeyServiceImpl) DeleteAPIKey(userID uint, apiKey string) error {
 	n, err := s.apiKeyDAO.DeleteUserAPIKey(context.Background(), userID, apiKey)
 	if err != nil {

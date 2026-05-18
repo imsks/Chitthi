@@ -16,6 +16,7 @@ type APIKeyService interface {
 	DeleteAPIKey(userID uint, apiKey string) error
 	AddProviderAPIKey(ctx context.Context, userID uint, provider string, apiKey string, senderEmail string) error
 	GetProviderAPIKeys(ctx context.Context, userID uint) ([]string, error)
+	GetDefaultSenderEmail(ctx context.Context, userID uint) (string, error)
 	DeleteProviderAPIKey(ctx context.Context, userID uint, provider string) error
 }
 
@@ -110,7 +111,14 @@ func (h *APIKeyHandler) GetProviderAPIKeysHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, gin.H{"providers": providers})
+	defaultSender, err := h.apiKeyService.GetDefaultSenderEmail(c.Request.Context(), userID)
+	if err != nil {
+		log.Printf("GetDefaultSenderEmail uid=%d err=%v", userID, err)
+		c.JSON(500, gin.H{"error": "Failed to fetch provider API keys"})
+		return
+	}
+
+	c.JSON(200, gin.H{"providers": providers, "default_sender_email": defaultSender})
 }
 
 func (h *APIKeyHandler) DeleteProviderAPIKeyHandler(c *gin.Context) {

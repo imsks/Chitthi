@@ -49,3 +49,25 @@ func TestExtractChitthiAPIKey_Empty(t *testing.T) {
 		t.Fatalf("expected empty, got %q", got)
 	}
 }
+
+func TestChitthiAPIKeyFromBodyOrHeader_PrefersBody(t *testing.T) {
+	r, err := http.NewRequest(http.MethodPost, "/", strings.NewReader("{}"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.Header.Set("Authorization", "Bearer from-header")
+	if got := ChitthiAPIKeyFromBodyOrHeader(r, "  body-key  "); got != "body-key" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestChitthiAPIKeyFromBodyOrHeader_FallsBackToHeader(t *testing.T) {
+	r, err := http.NewRequest(http.MethodPost, "/", strings.NewReader("{}"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.Header.Set("X-Chitthi-API-Key", "hdr")
+	if got := ChitthiAPIKeyFromBodyOrHeader(r, ""); got != "hdr" {
+		t.Fatalf("got %q", got)
+	}
+}

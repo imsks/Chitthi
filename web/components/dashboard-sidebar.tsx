@@ -19,11 +19,11 @@ export function DashboardSidebar() {
 	const { user, logout } = useAuth()
 
 	return (
-		<aside className='flex h-screen w-full max-w-xs flex-col border-r bg-white'>
-			<div className='border-b px-6 py-5'>
+		<aside className='flex h-full min-h-0 w-full max-w-xs flex-col border-r bg-white'>
+			<div className='shrink-0 border-b px-6 py-5'>
 				<ChitthiLogo href='/dashboard' />
 			</div>
-			<nav className='flex-1 space-y-2 px-4 py-6'>
+			<nav className='min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-6'>
 				{navigation.map((item) => {
 					const active = pathname === item.href
 					return (
@@ -40,7 +40,7 @@ export function DashboardSidebar() {
 					)
 				})}
 			</nav>
-			<div className='border-t px-4 py-5'>
+			<div className='shrink-0 border-t bg-white px-4 py-5'>
 				<div className='mb-4 rounded-lg bg-slate-50 px-4 py-3'>
 					<p className='text-sm font-medium text-gray-900'>{user?.name || "Chitthi user"}</p>
 					<p className='text-sm text-gray-600'>{user?.email || ""}</p>

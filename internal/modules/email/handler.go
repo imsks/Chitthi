@@ -29,8 +29,9 @@ func (h *Handler) SendEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.TrimSpace(req.APIKey) == "" || strings.TrimSpace(req.ToEmail) == "" || strings.TrimSpace(req.Subject) == "" || strings.TrimSpace(req.HTMLContent) == "" {
-		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "Missing required fields: api_key, to_email, subject and html_content", "MISSING_REQUIRED_FIELDS")
+	chitthiKey := ChitthiAPIKeyFromBodyOrHeader(r, req.APIKey)
+	if chitthiKey == "" || strings.TrimSpace(req.ToEmail) == "" || strings.TrimSpace(req.Subject) == "" || strings.TrimSpace(req.HTMLContent) == "" {
+		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "Missing required fields: api_key (or Authorization / X-Chitthi-API-Key), to_email, subject and html_content", "MISSING_REQUIRED_FIELDS")
 		return
 	}
 
@@ -39,7 +40,7 @@ func (h *Handler) SendEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	providerCredentials, err := h.resolver.ResolveAll(r.Context(), req.APIKey)
+	providerCredentials, err := h.resolver.ResolveAll(r.Context(), chitthiKey)
 	if err != nil {
 		msg := err.Error()
 		if strings.Contains(msg, "invalid or expired Chitthi API key") {

@@ -32,6 +32,14 @@ func ExtractChitthiAPIKey(r *http.Request) string {
 	return ""
 }
 
+// ChitthiAPIKeyFromBodyOrHeader prefers JSON `api_key`, then X-Chitthi-API-Key, then Authorization: Bearer.
+func ChitthiAPIKeyFromBodyOrHeader(r *http.Request, bodyAPIKey string) string {
+	if k := strings.TrimSpace(bodyAPIKey); k != "" {
+		return k
+	}
+	return ExtractChitthiAPIKey(r)
+}
+
 func mapPrimaryCredential(c *postgres.PrimaryProviderCredential) map[string]string {
 	if c == nil {
 		return nil

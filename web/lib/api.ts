@@ -84,7 +84,7 @@ export function addProviderAPIKey(provider: string, apiKey: string, senderEmail:
 }
 
 export function getProviderAPIKeys() {
-	return apiRequest<{ providers: string[] }>("/api/v1/apikeys/provider")
+	return apiRequest<{ providers: string[]; default_sender_email?: string }>("/api/v1/apikeys/provider")
 }
 
 export function deleteAPIKey(apiKey: string) {

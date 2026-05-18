@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 	return (
 		<div className='min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 lg:flex'>
-			<div className='hidden lg:block lg:shrink-0'>
+			<div className='hidden lg:sticky lg:top-0 lg:block lg:h-screen lg:shrink-0 lg:self-start'>
 				<DashboardSidebar />
 			</div>
 			<div className='flex min-h-screen flex-1 flex-col'>

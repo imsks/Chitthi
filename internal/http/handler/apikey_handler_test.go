@@ -13,6 +13,7 @@ import (
 
 type stubAPIKeyService struct {
 	providers            []string
+	defaultSender        string
 	getProvidersErr      error
 	deleteChitthiErr     error
 	deleteProviderErr    error
@@ -42,6 +43,12 @@ func (s *stubAPIKeyService) GetProviderAPIKeys(ctx context.Context, userID uint)
 		return nil, s.getProvidersErr
 	}
 	return s.providers, nil
+}
+
+func (s *stubAPIKeyService) GetDefaultSenderEmail(ctx context.Context, userID uint) (string, error) {
+	_ = ctx
+	_ = userID
+	return s.defaultSender, nil
 }
 
 func (s *stubAPIKeyService) DeleteProviderAPIKey(ctx context.Context, userID uint, provider string) error {
@@ -78,6 +85,30 @@ func TestGetProviderAPIKeysHandler_OK(t *testing.T) {
 	}
 	if len(body.Providers) != 2 || body.Providers[0] != "sendgrid" {
 		t.Fatalf("unexpected %v", body.Providers)
+	}
+}
+
+func TestGetProviderAPIKeysHandler_IncludesDefaultSender(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	stub := &stubAPIKeyService{providers: []string{"sendgrid"}, defaultSender: "sender@example.com"}
+	h := NewAPIKeyHandler(stub)
+	r := gin.New()
+	r.GET("/apikeys/provider", authUserID(7), h.GetProviderAPIKeysHandler)
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/apikeys/provider", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("status %d body %s", w.Code, w.Body.String())
+	}
+	var body struct {
+		Providers          []string `json:"providers"`
+		DefaultSenderEmail string   `json:"default_sender_email"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.DefaultSenderEmail != "sender@example.com" {
+		t.Fatalf("unexpected sender %q", body.DefaultSenderEmail)
 	}
 }
 
