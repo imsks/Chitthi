@@ -45,8 +45,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 						<Button asChild variant={pathname === "/dashboard" ? "default" : "outline"} size='sm' className={pathname === "/dashboard" ? "bg-blue-600 hover:bg-blue-700" : "border-blue-200 hover:bg-blue-50"}>
 							<Link href='/dashboard'>Dashboard</Link>
 						</Button>
-						<Button asChild variant={pathname === "/dashboard/settings" ? "default" : "outline"} size='sm' className={pathname === "/dashboard/settings" ? "bg-blue-600 hover:bg-blue-700" : "border-blue-200 hover:bg-blue-50"}>
-							<Link href='/dashboard/settings'>Settings</Link>
+						<Button asChild variant={pathname === "/dashboard/providers" ? "default" : "outline"} size='sm' className={pathname === "/dashboard/providers" ? "bg-blue-600 hover:bg-blue-700" : "border-blue-200 hover:bg-blue-50"}>
+							<Link href='/dashboard/providers'>Providers</Link>
 						</Button>
 					</div>
 				</header>

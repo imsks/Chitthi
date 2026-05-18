@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/imsks/chitthi/internal/database/postgres"
 )
 
@@ -34,6 +35,7 @@ var (
 	ErrSenderEmailInvalid  = errors.New("sender_email must be a valid email address")
 	ErrChitthiAPIKeyNotFound       = errors.New("api key not found")
 	ErrProviderCredentialNotFound  = errors.New("provider credentials not found")
+	ErrProviderAPIKeyRequired      = errors.New("api_key is required when adding a new provider credential")
 )
 
 // ValidateSenderEmail checks a minimal RFC-like shape for onboarding BYOK senders.
@@ -70,8 +72,22 @@ func (s *APIKeyServiceImpl) AddProviderAPIKey(ctx context.Context, userID uint, 
 	if err != nil {
 		return err
 	}
-	_, err = s.providerApiKeyDAO.AddProviderAPIKey(ctx, userID, providerID, apiKey, strings.TrimSpace(senderEmail))
+	key := strings.TrimSpace(apiKey)
+	if key == "" {
+		existingKey, fetchErr := s.providerApiKeyDAO.GetProviderAPIKeys(ctx, userID, providerID)
+		var resolveErr error
+		key, resolveErr = EffectiveProviderAPIKeyForUpsert("", existingKey, fetchErr)
+		if resolveErr != nil {
+			return resolveErr
+		}
+	}
+	_, err = s.providerApiKeyDAO.AddProviderAPIKey(ctx, userID, providerID, key, strings.TrimSpace(senderEmail))
 	return err
+}
+
+// GetProviderCredentialSummaries lists configured providers with verified sender emails (secrets are omitted).
+func (s *APIKeyServiceImpl) GetProviderCredentialSummaries(ctx context.Context, userID uint) ([]postgres.ProviderCredentialSummary, error) {
+	return s.providerApiKeyDAO.GetConfiguredProviderSummaries(ctx, userID)
 }
 
 func (s *APIKeyServiceImpl) GetProviderAPIKey(ctx context.Context, userID uint, provider string) (string, error) {
@@ -106,6 +122,24 @@ func (s *APIKeyServiceImpl) GetAPIKeys(userID uint) ([]string, error) {
 
 func (s *APIKeyServiceImpl) GetProviderAPIKeys(ctx context.Context, userID uint) ([]string, error) {
 	return s.providerApiKeyDAO.GetConfiguredProviderNames(ctx, userID)
+}
+
+// EffectiveProviderAPIKey resolves the key to persist: non-empty trimmed input, else existing stored key, else ErrProviderAPIKeyRequired.
+// Exposed for unit tests of upsert semantics without Postgres.
+func EffectiveProviderAPIKeyForUpsert(trimmedIncoming string, existing string, existingErr error) (string, error) {
+	if strings.TrimSpace(trimmedIncoming) != "" {
+		return strings.TrimSpace(trimmedIncoming), nil
+	}
+	if existingErr != nil {
+		if errors.Is(existingErr, pgx.ErrNoRows) {
+			return "", ErrProviderAPIKeyRequired
+		}
+		return "", existingErr
+	}
+	if strings.TrimSpace(existing) == "" {
+		return "", ErrProviderAPIKeyRequired
+	}
+	return strings.TrimSpace(existing), nil
 }
 
 // GetDefaultSenderEmail returns the verified sender for the user's primary unified-send provider, if any.

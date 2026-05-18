@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/imsks/chitthi/internal/database/postgres"
 	"github.com/imsks/chitthi/internal/services"
 )
 
@@ -15,7 +16,7 @@ type APIKeyService interface {
 	GetAPIKeys(userID uint) ([]string, error)
 	DeleteAPIKey(userID uint, apiKey string) error
 	AddProviderAPIKey(ctx context.Context, userID uint, provider string, apiKey string, senderEmail string) error
-	GetProviderAPIKeys(ctx context.Context, userID uint) ([]string, error)
+	GetProviderCredentialSummaries(ctx context.Context, userID uint) ([]postgres.ProviderCredentialSummary, error)
 	GetDefaultSenderEmail(ctx context.Context, userID uint) (string, error)
 	DeleteProviderAPIKey(ctx context.Context, userID uint, provider string) error
 }
@@ -68,7 +69,9 @@ func (h *APIKeyHandler) AddProviderAPIKeyHandler(c *gin.Context) {
 	if err != nil {
 		log.Println("error when adding api key", err)
 		status := 500
-		if errors.Is(err, services.ErrSenderEmailRequired) || errors.Is(err, services.ErrSenderEmailInvalid) {
+		if errors.Is(err, services.ErrSenderEmailRequired) ||
+			errors.Is(err, services.ErrSenderEmailInvalid) ||
+			errors.Is(err, services.ErrProviderAPIKeyRequired) {
 			status = 400
 		}
 		c.JSON(status, gin.H{"error": err.Error()})
@@ -104,11 +107,21 @@ func (h *APIKeyHandler) GetProviderAPIKeysHandler(c *gin.Context) {
 	}
 	userID := userIDVal.(uint)
 
-	providers, err := h.apiKeyService.GetProviderAPIKeys(c.Request.Context(), userID)
+	summaries, err := h.apiKeyService.GetProviderCredentialSummaries(c.Request.Context(), userID)
 	if err != nil {
-		log.Printf("GetProviderAPIKeys uid=%d err=%v", userID, err)
+		log.Printf("GetProviderCredentialSummaries uid=%d err=%v", userID, err)
 		c.JSON(500, gin.H{"error": "Failed to fetch provider API keys"})
 		return
+	}
+
+	providers := make([]string, len(summaries))
+	providerCreds := make([]gin.H, len(summaries))
+	for i, row := range summaries {
+		providers[i] = row.ProviderName
+		providerCreds[i] = gin.H{
+			"provider":     row.ProviderName,
+			"sender_email": row.SenderEmail,
+		}
 	}
 
 	defaultSender, err := h.apiKeyService.GetDefaultSenderEmail(c.Request.Context(), userID)
@@ -118,7 +131,11 @@ func (h *APIKeyHandler) GetProviderAPIKeysHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, gin.H{"providers": providers, "default_sender_email": defaultSender})
+	c.JSON(200, gin.H{
+		"providers":            providers,
+		"provider_credentials": providerCreds,
+		"default_sender_email": defaultSender,
+	})
 }
 
 func (h *APIKeyHandler) DeleteProviderAPIKeyHandler(c *gin.Context) {

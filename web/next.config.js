@@ -4,6 +4,15 @@ const nextConfig = {
         ignoreDuringBuilds: true
     },
     images: { unoptimized: true },
+    async redirects() {
+        return [
+            {
+                source: "/dashboard/settings",
+                destination: "/dashboard/providers",
+                permanent: true
+            }
+        ]
+    },
     async rewrites() {
         const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 

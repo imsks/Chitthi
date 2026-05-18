@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func TestNormalizeUserAPIKeyExpiry_DefaultOneYear(t *testing.T) {
@@ -27,14 +29,26 @@ func TestNormalizeUserAPIKeyExpiry_Passthrough(t *testing.T) {
 	}
 }
 
-func TestValidateSenderEmail(t *testing.T) {
-	if err := ValidateSenderEmail(""); !errors.Is(err, ErrSenderEmailRequired) {
-		t.Fatalf("empty: %v", err)
+func TestEffectiveProviderAPIKeyForUpsert(t *testing.T) {
+	t.Parallel()
+	key, err := EffectiveProviderAPIKeyForUpsert("  ab  ", "", pgx.ErrNoRows)
+	if err != nil || key != "ab" {
+		t.Fatalf("nonempty incoming: got %q err %v", key, err)
 	}
-	if err := ValidateSenderEmail("bad"); !errors.Is(err, ErrSenderEmailInvalid) {
-		t.Fatalf("bad: %v", err)
+	key, err = EffectiveProviderAPIKeyForUpsert("", "stored", nil)
+	if err != nil || key != "stored" {
+		t.Fatalf("empty + existing: got %q err %v", key, err)
 	}
-	if err := ValidateSenderEmail("a@b.com"); err != nil {
-		t.Fatalf("valid: %v", err)
+	_, err = EffectiveProviderAPIKeyForUpsert("", "", pgx.ErrNoRows)
+	if !errors.Is(err, ErrProviderAPIKeyRequired) {
+		t.Fatalf("no rows: expected ErrProviderAPIKeyRequired, got %v", err)
+	}
+	_, err = EffectiveProviderAPIKeyForUpsert("", "", errors.New("db down"))
+	if err == nil || errors.Is(err, ErrProviderAPIKeyRequired) {
+		t.Fatalf("unexpected err %v", err)
+	}
+	_, err = EffectiveProviderAPIKeyForUpsert("", "  ", nil)
+	if !errors.Is(err, ErrProviderAPIKeyRequired) {
+		t.Fatalf("blank existing: expected ErrProviderAPIKeyRequired, got %v", err)
 	}
 }

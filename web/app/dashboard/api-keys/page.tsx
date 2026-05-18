@@ -130,8 +130,8 @@ export default function ApiKeysPage() {
 						<code className='rounded bg-slate-100 px-1.5 py-0.5 text-sm'>POST /send-email</code>. The Chitthi backend URL is typically{" "}
 						<code className='rounded bg-slate-100 px-1.5 py-0.5 text-sm'>NEXT_PUBLIC_API_URL</code> (e.g.{" "}
 						<code className='rounded bg-slate-100 px-1.5 py-0.5 text-sm'>http://localhost:8080</code>). Defaults for provider credentials and verified sender email come from{" "}
-						<Link href='/dashboard/settings' className='font-medium text-blue-700 underline'>
-							Settings
+						<Link href='/dashboard/providers' className='font-medium text-blue-700 underline'>
+							Providers
 						</Link>
 						.
 					</p>
@@ -219,14 +219,14 @@ export default function ApiKeysPage() {
 				<CardContent className='space-y-4'>
 					{defaultSenderEmail ? (
 						<p className='text-sm text-gray-600'>
-							<code className='rounded bg-slate-100 px-1.5 py-0.5 text-sm'>from_email</code> is set to your verified sender from Settings:{" "}
+							<code className='rounded bg-slate-100 px-1.5 py-0.5 text-sm'>from_email</code> is set to your verified sender from Providers:{" "}
 							<span className='font-medium text-gray-800'>{defaultSenderEmail}</span>
 						</p>
 					) : (
 						<p className='text-sm text-gray-600'>
-							No verified sender on file. You can still send—Chitthi will use the sender from Settings when resolving your key—or add one in{" "}
-							<Link href='/dashboard/settings' className='font-medium text-blue-700 underline'>
-								Settings
+							No verified sender on file. You can still send—Chitthi will use the sender from Providers when resolving your key—or add one in{" "}
+							<Link href='/dashboard/providers' className='font-medium text-blue-700 underline'>
+								Providers
 							</Link>
 							.
 						</p>

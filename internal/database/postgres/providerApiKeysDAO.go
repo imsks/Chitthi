@@ -74,6 +74,39 @@ func (dao *ProviderAPIKeysDAO) GetProviderIDByName(ctx context.Context, provider
 	return providerID, nil
 }
 
+// ProviderCredentialSummary lists a configured provider row without exposing the API key secret.
+type ProviderCredentialSummary struct {
+	ProviderName string
+	SenderEmail  string
+}
+
+// GetConfiguredProviderSummaries returns provider name and stored sender_email for each row (same ordering as names).
+func (dao *ProviderAPIKeysDAO) GetConfiguredProviderSummaries(ctx context.Context, userID uint) ([]ProviderCredentialSummary, error) {
+	rows, err := dao.pool.Query(
+		ctx,
+		`SELECT (p.name)::text, pak.sender_email
+		 FROM provider_api_keys pak
+		 JOIN providers p ON pak.provider_id = p.id
+		 WHERE pak.user_id = $1
+		 ORDER BY (p.name)::text`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]ProviderCredentialSummary, 0)
+	for rows.Next() {
+		var row ProviderCredentialSummary
+		if err := rows.Scan(&row.ProviderName, &row.SenderEmail); err != nil {
+			return nil, err
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
+
 func (dao *ProviderAPIKeysDAO) GetConfiguredProviderNames(ctx context.Context, userID uint) ([]string, error) {
 	rows, err := dao.pool.Query(
 		ctx,

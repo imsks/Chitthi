@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { KeyRound, LayoutDashboard, LogOut, Settings } from "lucide-react"
+import { KeyRound, LayoutDashboard, LogOut, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ChitthiLogo } from "@/components/chitthi-logo"
 import { useAuth } from "@/contexts/auth-context"
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 const navigation = [
 	{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
 	{ href: "/dashboard/api-keys", label: "API Keys", icon: KeyRound },
-	{ href: "/dashboard/settings", label: "Settings", icon: Settings }
+	{ href: "/dashboard/providers", label: "Providers", icon: Mail }
 ]
 
 export function DashboardSidebar() {

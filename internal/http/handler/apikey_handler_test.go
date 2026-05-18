@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/imsks/chitthi/internal/database/postgres"
 	"github.com/imsks/chitthi/internal/services"
 )
 
 type stubAPIKeyService struct {
-	providers            []string
+	credentialSummaries  []postgres.ProviderCredentialSummary
+	getSummariesErr      error
 	defaultSender        string
-	getProvidersErr      error
 	deleteChitthiErr     error
 	deleteProviderErr    error
 	lastDeleteChitthi    string
@@ -36,13 +37,13 @@ func (s *stubAPIKeyService) AddProviderAPIKey(context.Context, uint, string, str
 	return nil
 }
 
-func (s *stubAPIKeyService) GetProviderAPIKeys(ctx context.Context, userID uint) ([]string, error) {
+func (s *stubAPIKeyService) GetProviderCredentialSummaries(ctx context.Context, userID uint) ([]postgres.ProviderCredentialSummary, error) {
 	_ = ctx
 	_ = userID
-	if s.getProvidersErr != nil {
-		return nil, s.getProvidersErr
+	if s.getSummariesErr != nil {
+		return nil, s.getSummariesErr
 	}
-	return s.providers, nil
+	return s.credentialSummaries, nil
 }
 
 func (s *stubAPIKeyService) GetDefaultSenderEmail(ctx context.Context, userID uint) (string, error) {
@@ -67,7 +68,10 @@ func authUserID(uid uint) gin.HandlerFunc {
 
 func TestGetProviderAPIKeysHandler_OK(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	stub := &stubAPIKeyService{providers: []string{"sendgrid", "mailersend"}}
+	stub := &stubAPIKeyService{credentialSummaries: []postgres.ProviderCredentialSummary{
+		{ProviderName: "sendgrid", SenderEmail: "send@example.com"},
+		{ProviderName: "mailersend", SenderEmail: "mail@example.com"},
+	}}
 	h := NewAPIKeyHandler(stub)
 	r := gin.New()
 	r.GET("/apikeys/provider", authUserID(7), h.GetProviderAPIKeysHandler)
@@ -78,19 +82,31 @@ func TestGetProviderAPIKeysHandler_OK(t *testing.T) {
 		t.Fatalf("status %d body %s", w.Code, w.Body.String())
 	}
 	var body struct {
-		Providers []string `json:"providers"`
+		Providers            []string `json:"providers"`
+		ProviderCredentials []struct {
+			Provider     string `json:"provider"`
+			SenderEmail  string `json:"sender_email"`
+		} `json:"provider_credentials"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
 	if len(body.Providers) != 2 || body.Providers[0] != "sendgrid" {
-		t.Fatalf("unexpected %v", body.Providers)
+		t.Fatalf("unexpected providers %v", body.Providers)
+	}
+	if len(body.ProviderCredentials) != 2 ||
+		body.ProviderCredentials[0].Provider != "sendgrid" ||
+		body.ProviderCredentials[0].SenderEmail != "send@example.com" {
+		t.Fatalf("unexpected provider_credentials %+v", body.ProviderCredentials)
 	}
 }
 
 func TestGetProviderAPIKeysHandler_IncludesDefaultSender(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	stub := &stubAPIKeyService{providers: []string{"sendgrid"}, defaultSender: "sender@example.com"}
+	stub := &stubAPIKeyService{
+		credentialSummaries: []postgres.ProviderCredentialSummary{{ProviderName: "sendgrid", SenderEmail: "x@example.com"}},
+		defaultSender:       "sender@example.com",
+	}
 	h := NewAPIKeyHandler(stub)
 	r := gin.New()
 	r.GET("/apikeys/provider", authUserID(7), h.GetProviderAPIKeysHandler)

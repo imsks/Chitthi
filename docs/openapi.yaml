@@ -273,7 +273,7 @@ paths:
     post:
       tags:
         - API Keys
-      summary: Add or update a provider API key
+      summary: Add or update provider credentials
       operationId: addProviderAPIKey
       security:
         - BearerAuth: []
@@ -308,7 +308,7 @@ paths:
     get:
       tags:
         - API Keys
-      summary: List configured provider names for the authenticated user
+      summary: List configured providers and verified sender emails for the authenticated user
       operationId: getProviderAPIKeys
       security:
         - BearerAuth: []
@@ -325,9 +325,26 @@ paths:
                     type: array
                     items:
                       type: string
+                    description: Configured provider identifiers (same order as provider_credentials).
                     example:
                       - breevo
                       - sendgrid
+                  provider_credentials:
+                    type: array
+                    description: One entry per configured provider; API keys are never returned.
+                    items:
+                      type: object
+                      required:
+                        - provider
+                        - sender_email
+                      properties:
+                        provider:
+                          type: string
+                          example: mailersend
+                        sender_email:
+                          type: string
+                          format: email
+                          example: newsletters@yourdomain.com
                   default_sender_email:
                     type: string
                     description: Verified sender email for the user's primary unified-send provider (SendGrid, then Breevo, then MailerSend), when configured.
@@ -540,7 +557,6 @@ components:
       type: object
       required:
         - provider
-        - api_key
         - sender_email
       properties:
         provider:
@@ -553,6 +569,9 @@ components:
           example: sendgrid
         api_key:
           type: string
+          description: |
+            Provider secret. Required when first adding credentials for this provider.
+            If omitted or empty for an existing row, the previously stored API key is kept (e.g. to update verified sender email only).
           example: SG.xxxxxxxxxxxxxxxxxxxx
         sender_email:
           type: string

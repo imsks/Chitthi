@@ -76,15 +76,34 @@ export function getAPIKeys() {
 	return apiRequest<{ api_keys: string[] }>("/api/v1/apikeys")
 }
 
+export type ProviderCredentialRow = {
+	provider: string
+	sender_email: string
+}
+
+export type GetProviderAPIKeysResponse = {
+	providers: string[]
+	provider_credentials?: ProviderCredentialRow[]
+	default_sender_email?: string
+}
+
 export function addProviderAPIKey(provider: string, apiKey: string, senderEmail: string) {
+	const body: Record<string, string> = {
+		provider,
+		sender_email: senderEmail
+	}
+	const trimmedKey = apiKey.trim()
+	if (trimmedKey !== "") {
+		body.api_key = trimmedKey
+	}
 	return apiRequest<{ message: string }>("/api/v1/apikeys/provider", {
 		method: "POST",
-		body: { provider, api_key: apiKey, sender_email: senderEmail }
+		body
 	})
 }
 
 export function getProviderAPIKeys() {
-	return apiRequest<{ providers: string[]; default_sender_email?: string }>("/api/v1/apikeys/provider")
+	return apiRequest<GetProviderAPIKeysResponse>("/api/v1/apikeys/provider")
 }
 
 export function deleteAPIKey(apiKey: string) {

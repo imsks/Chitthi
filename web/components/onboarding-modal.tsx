@@ -43,7 +43,7 @@ export function OnboardingModal() {
 		try {
 			await addProviderAPIKey(provider, providerKey.trim(), email)
 			setStep(2)
-			toast({ title: "Provider key saved", description: "You can update it later from Settings." })
+			toast({ title: "Provider key saved", description: "You can update it later from Providers." })
 		} catch (saveError) {
 			setError(saveError instanceof Error ? saveError.message : "Unable to save provider key")
 		} finally {
