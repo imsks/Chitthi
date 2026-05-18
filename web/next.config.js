@@ -19,6 +19,10 @@ const nextConfig = {
         // Keep /api/auth/* for NextAuth — proxy only the Go API under /api/v1/*
         return [
             {
+                source: "/send-email",
+                destination: `${apiBase}/send-email`
+            },
+            {
                 source: "/api/v1/:path*",
                 destination: `${apiBase}/api/v1/:path*`
             }

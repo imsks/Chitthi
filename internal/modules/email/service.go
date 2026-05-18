@@ -222,8 +222,28 @@ func (s *Service) SendEmail(_ context.Context, req *EmailRequest) *SendEmailResu
 	}
 }
 
+// credentialsMatchingProviderHint restricts failover to the named BYOK row when the client sends JSON `provider` (e.g. dashboard “test” for one row).
+// Empty or unrecognized hint preserves the full ordered credential list from the resolver.
+func credentialsMatchingProviderHint(credentials []*postgres.PrimaryProviderCredential, hint string) []*postgres.PrimaryProviderCredential {
+	h := strings.TrimSpace(strings.ToLower(hint))
+	if h == "" {
+		return credentials
+	}
+	out := make([]*postgres.PrimaryProviderCredential, 0)
+	for _, c := range credentials {
+		if c != nil && strings.EqualFold(strings.TrimSpace(c.ProviderName), h) {
+			out = append(out, c)
+		}
+	}
+	if len(out) == 0 {
+		return credentials
+	}
+	return out
+}
+
 // SendEmailWithProviders sends an email using DB-backed provider credentials with failover.
 func (s *Service) SendEmailWithProviders(_ context.Context, req *EmailRequest, credentials []*postgres.PrimaryProviderCredential) *SendEmailResult {
+	credentials = credentialsMatchingProviderHint(credentials, req.Provider)
 	if len(credentials) == 0 {
 		return &SendEmailResult{
 			Success: false,
