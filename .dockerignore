@@ -1,5 +1,6 @@
 # Go binaries
 /server
+/main
 *.exe
 *.out
 *.test
@@ -18,6 +19,21 @@ vendor/
 # IDE/editor files
 .vscode/
 .idea/
+
+# Dev tooling
+tmp/
+air_tmp/
+logs/
+
+# Environment
+.env
+.env.*
+
+# Frontend (not needed for API image)
+web/
+
+# Docker
+docker-compose.yml
 *.swp
 
 # OS-specific

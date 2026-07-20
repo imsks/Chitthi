@@ -9,7 +9,6 @@ import (
 
 // InitPostgres returns a concurrent-safe pool. A single pgx.Conn must not be shared across goroutines (causes "conn busy").
 func InitPostgres(dsn string) (*pgxpool.Pool, error) {
-	log.Println("dsn", dsn)
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, err

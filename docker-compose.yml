@@ -8,10 +8,6 @@ services:
       - "8080:8080"
     env_file:
       - .env
-    environment:
-      # Override .env so in-container resolution always uses Compose DNS (avoids localhost / stale files).
-      DATABASE_URL: postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
-      REDIS_URL: redis://redis:6379
     depends_on:
       db:
         condition: service_started

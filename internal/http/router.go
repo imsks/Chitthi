@@ -37,6 +37,10 @@ func SetupRouter(cfg *config.Config, pool *pgxpool.Pool, version string) *gin.En
 		c.String(200, fmt.Sprintf("📮 Welcome to Chitthi %s - BYOK Email Delivery Service", version))
 	})
 
+	engine.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
 	engine.GET("/version", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"version":   version,
