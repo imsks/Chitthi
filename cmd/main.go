@@ -15,11 +15,11 @@ func main() {
 
 	pool, err := database.InitPostgres(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatal("Failed to initialize database:", err)
+		log.Printf("⚠️  Failed to initialize database: %v (server will start without DB)", err)
 	}
-	err = database.InitRedis(cfg.RedisURL)
-	if err != nil {
-		log.Fatal("Failed to initialize Redis:", err)
+
+	if err := database.InitRedis(cfg.RedisURL); err != nil {
+		log.Printf("⚠️  Failed to initialize Redis: %v (server will start without Redis)", err)
 	}
 
 	defer database.Close(pool)
