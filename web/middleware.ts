@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { getToken } from "next-auth/jwt"
+import { jwtDecrypt, hkdf } from "jose"
 
 const PUBLIC_API_PREFIXES = [
 	"/api/v1/auth/google",
@@ -10,6 +10,31 @@ const PUBLIC_API_PREFIXES = [
 
 function isPublicApiV1(pathname: string): boolean {
 	return PUBLIC_API_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+}
+
+async function getNextAuthToken(
+	request: NextRequest,
+	secret: string
+): Promise<Record<string, unknown> | null> {
+	const cookie =
+		request.cookies.get("__Secure-next-auth.session-token")?.value ??
+		request.cookies.get("next-auth.session-token")?.value
+
+	if (!cookie) return null
+
+	try {
+		const encryptionKey = await hkdf(
+			"sha256",
+			new TextEncoder().encode(secret),
+			new Uint8Array(),
+			"NextAuth.js Generated Encryption Key",
+			32
+		)
+		const { payload } = await jwtDecrypt(cookie, encryptionKey, { clockTolerance: 15 })
+		return payload as Record<string, unknown>
+	} catch {
+		return null
+	}
 }
 
 export async function middleware(request: NextRequest) {
@@ -30,7 +55,7 @@ export async function middleware(request: NextRequest) {
 		return NextResponse.next()
 	}
 
-	const token = await getToken({ req: request, secret })
+	const token = await getNextAuthToken(request, secret)
 	const chitthiUserId = token?.chitthiUserId as number | undefined
 
 	if (isProtectedApi) {
