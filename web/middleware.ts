@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { jwtDecrypt, hkdf } from "jose"
+import { jwtDecrypt } from "jose"
 
 const PUBLIC_API_PREFIXES = [
 	"/api/v1/auth/google",
@@ -10,6 +10,24 @@ const PUBLIC_API_PREFIXES = [
 
 function isPublicApiV1(pathname: string): boolean {
 	return PUBLIC_API_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+}
+
+async function deriveEncryptionKey(secret: string): Promise<Uint8Array> {
+	const encoder = new TextEncoder()
+	const ikm = encoder.encode(secret)
+	const info = encoder.encode("NextAuth.js Generated Encryption Key")
+	const salt = new Uint8Array(32)
+
+	const baseKey = await crypto.subtle.importKey("raw", ikm, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+	const prkBuffer = await crypto.subtle.sign("HMAC", baseKey, salt)
+	const prk = await crypto.subtle.importKey("raw", prkBuffer, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+
+	const infoAndCounter = new Uint8Array(info.length + 1)
+	infoAndCounter.set(info, 0)
+	infoAndCounter[info.length] = 1
+
+	const okm = await crypto.subtle.sign("HMAC", prk, infoAndCounter)
+	return new Uint8Array(okm).slice(0, 32)
 }
 
 async function getNextAuthToken(
@@ -23,13 +41,7 @@ async function getNextAuthToken(
 	if (!cookie) return null
 
 	try {
-		const encryptionKey = await hkdf(
-			"sha256",
-			new TextEncoder().encode(secret),
-			new Uint8Array(),
-			"NextAuth.js Generated Encryption Key",
-			32
-		)
+		const encryptionKey = await deriveEncryptionKey(secret)
 		const { payload } = await jwtDecrypt(cookie, encryptionKey, { clockTolerance: 15 })
 		return payload as Record<string, unknown>
 	} catch {
