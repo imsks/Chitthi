@@ -1,0 +1,695 @@
+openapi: 3.0.3
+info:
+  title: Chitthi API
+  description: |
+    Chitthi is a BYOK (Bring Your Own Keys) email delivery service.
+    It supports Breevo, SendGrid, and MailerSend, plus sending with your stored provider credentials using a **Chitthi API key**.
+
+    ## Authentication
+    When called through the **Next.js** dev server, protected routes are authenticated with headers injected by middleware:
+    - `X-User-ID` (database user id)
+    - `X-Chitthi-BFF-Secret` (shared secret; must match the Go API `CHITTHI_BFF_SECRET`)
+
+    Direct access to the Go API (e.g. `http://localhost:8080`) also accepts JWT from either:
+    - HttpOnly `jwt` cookie set by `POST /api/v1/auth/google`
+    - `Authorization: Bearer <jwt>` header (Chitthi session JWT).
+
+    For `POST /send-email` only, authenticate with your unified Chitthi **API key** via JSON `api_key`, `Authorization: Bearer <chitthi-api-key>`, or `X-Chitthi-API-Key`. That path does not use JWT.
+
+    After **NextAuth** Google sign-in, the app calls `POST /api/v1/auth/upsert` with a Google ID token to create or update the user in the database (no session cookie).
+  version: v1.0.0
+  contact:
+    name: Chitthi on GitHub
+    url: https://github.com/imsks/chitthi
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: Google Sign-In and session
+  - name: API Keys
+    description: Manage Chitthi API keys and provider credentials
+  - name: Email
+    description: Send emails via configured providers
+
+paths:
+  /api/v1/auth/google:
+    post:
+      tags:
+        - Auth
+      summary: Sign in with Google (ID token from Google Identity Services)
+      operationId: googleAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Session started (JWT is set in `jwt` HttpOnly cookie)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logged_in:
+                    type: boolean
+                    example: true
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid or unverified Google credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/auth/upsert:
+    post:
+      tags:
+        - Auth
+      summary: Upsert user from Google ID token (NextAuth / server-side; no JWT cookie)
+      operationId: googleAuthUpsert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: User created or updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid or unverified Google credential
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Log out and clear JWT cookie
+      operationId: logoutUser
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logged_out:
+                    type: boolean
+                    example: true
+
+  /api/v1/user/me:
+    get:
+      tags:
+        - Auth
+      summary: Get authenticated user profile
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/user/onboarding:
+    post:
+      tags:
+        - Auth
+      summary: Mark the authenticated user as onboarded
+      operationId: updateOnboardingStatus
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Onboarding status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Onboarding status updated successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/apikeys:
+    post:
+      tags:
+        - API Keys
+      summary: Create a new Chitthi API key
+      operationId: createAPIKey
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - name: expiry
+          in: query
+          required: false
+          description: Optional expiry datetime for the API key (RFC3339 format). If omitted, the key expires one year from creation (UTC).
+          schema:
+            type: string
+            format: date-time
+            example: '2026-12-31T23:59:59Z'
+      responses:
+        '200':
+          description: API key created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_key:
+                    type: string
+                    description: The generated API key
+                    example: ck_live_abc123xyz
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    get:
+      tags:
+        - API Keys
+      summary: List all API keys for the authenticated user
+      operationId: getAPIKeys
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_keys:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - ck_live_abc123xyz
+                      - ck_live_def456uvw
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/apikeys/{api_key}:
+    delete:
+      tags:
+        - API Keys
+      summary: Delete (revoke) an API key
+      operationId: deleteAPIKey
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - name: api_key
+          in: path
+          required: true
+          description: The API key to revoke
+          schema:
+            type: string
+            example: ck_live_abc123xyz
+      responses:
+        '200':
+          description: API key deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: API key deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/apikeys/provider:
+    post:
+      tags:
+        - API Keys
+      summary: Add or update provider credentials
+      operationId: addProviderAPIKey
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddProviderAPIKeyRequest'
+            example:
+              provider: sendgrid
+              api_key: SG.xxxxxxxxxxxxxxxxxxxx
+      responses:
+        '200':
+          description: Provider API key added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Provider API key added successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    get:
+      tags:
+        - API Keys
+      summary: List configured providers and verified sender emails for the authenticated user
+      operationId: getProviderAPIKeys
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Configured providers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      type: string
+                    description: Configured provider identifiers (same order as provider_credentials).
+                    example:
+                      - breevo
+                      - sendgrid
+                  provider_credentials:
+                    type: array
+                    description: One entry per configured provider; API keys are never returned.
+                    items:
+                      type: object
+                      required:
+                        - provider
+                        - sender_email
+                      properties:
+                        provider:
+                          type: string
+                          example: mailersend
+                        sender_email:
+                          type: string
+                          format: email
+                          example: newsletters@yourdomain.com
+                  default_sender_email:
+                    type: string
+                    description: Verified sender email for the user's primary unified-send provider (SendGrid, then Breevo, then MailerSend), when configured.
+                    example: newsletters@yourdomain.com
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /send-email:
+    post:
+      tags:
+        - Email
+      summary: Send an email via a BYOK provider
+      description: |
+        Sends an email using your stored BYOK provider credentials resolved from a **Chitthi API key**.
+
+        ### Request contract
+        Include your Chitthi API key as JSON `api_key`, or send it with `Authorization: Bearer` or `X-Chitthi-API-Key`, along with email fields.
+        Chitthi resolves your user from this key, loads all configured provider credentials,
+        then attempts provider failover in this priority order.
+
+        ### Provider priority (when resolving stored credentials)
+        1. **SendGrid**
+        2. **Breevo**
+        3. **MailerSend**
+      operationId: sendEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailRequest'
+            example:
+              api_key: ck_live_abc123xyz
+              from_email: sender@example.com
+              from_name: Sender Name
+              to_email: recipient@example.com
+              to_name: Recipient Name
+              subject: Hello from Chitthi
+              html_content: '<h1>Hello!</h1><p>This is a test email.</p>'
+      responses:
+        '200':
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailResponse'
+        '400':
+          description: Bad request (invalid JSON or missing required fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailErrorResponse'
+              examples:
+                invalid_json:
+                  value:
+                    status: false
+                    message: Invalid JSON
+                    error:
+                      code: INVALID_JSON
+                      message: Invalid JSON
+                missing_fields:
+                  value:
+                    status: false
+                    message: Missing required fields
+                    error:
+                      code: MISSING_REQUIRED_FIELDS
+                      message: 'Missing required fields: api_key (or Authorization / X-Chitthi-API-Key), to_email, subject and html_content'
+        '401':
+          description: Invalid or expired Chitthi API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailErrorResponse'
+              example:
+                status: false
+                message: invalid or expired Chitthi API key
+                error:
+                  code: CHITTHI_KEY_INVALID
+                  message: invalid or expired Chitthi API key
+        '422':
+          description: API key is valid but provider credentials are not configured/usable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailErrorResponse'
+              example:
+                status: false
+                message: no provider credentials configured for this account
+                error:
+                  code: CHITTHI_PROVIDER_RESOLVE_FAILED
+                  message: no provider credentials configured for this account
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailErrorResponse'
+              example:
+                status: false
+                message: Method not allowed
+                error:
+                  code: METHOD_NOT_ALLOWED
+                  message: Method not allowed
+        '500':
+          description: Email send failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailErrorResponse'
+              example:
+                status: false
+                message: Failed to send email
+                error:
+                  code: EMAIL_SEND_FAILED
+                  message: 'Failed to send email: <provider error>'
+
+  /version:
+    get:
+      tags:
+        - Email
+      summary: Get service version and status
+      operationId: getVersion
+      responses:
+        '200':
+          description: Service version info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+              example:
+                version: v1.0.0
+                service: Chitthi Email Service
+                status: running
+                timestamp: '1713484800'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Optional bearer token path for protected APIs.
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: jwt
+      description: HttpOnly JWT cookie set by `POST /api/v1/auth/google`.
+
+  responses:
+    BadRequest:
+      description: Invalid request body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    GoogleAuthRequest:
+      type: object
+      required:
+        - credential
+      properties:
+        credential:
+          type: string
+          description: Google ID token (JWT) from Google Identity Services
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: Jane Doe
+        email:
+          type: string
+          format: email
+          example: jane@example.com
+        is_onboarded:
+          type: boolean
+          example: false
+        profession:
+          type: string
+          nullable: true
+          example: engineer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AddProviderAPIKeyRequest:
+      type: object
+      required:
+        - provider
+        - sender_email
+      properties:
+        provider:
+          type: string
+          description: Email provider name
+          enum:
+            - sendgrid
+            - breevo
+            - mailersend
+          example: sendgrid
+        api_key:
+          type: string
+          description: |
+            Provider secret. Required when first adding credentials for this provider.
+            If omitted or empty for an existing row, the previously stored API key is kept (e.g. to update verified sender email only).
+          example: SG.xxxxxxxxxxxxxxxxxxxx
+        sender_email:
+          type: string
+          format: email
+          description: Verified sender identity for this provider (used as default From for Chitthi-key sends)
+          example: newsletters@yourdomain.com
+
+    SendEmailRequest:
+      type: object
+      required:
+        - to_email
+        - subject
+        - html_content
+      properties:
+        api_key:
+          type: string
+          description: Unified Chitthi API key (optional if you send the same value via Authorization Bearer or X-Chitthi-API-Key)
+          example: ck_live_abc123xyz
+        from_email:
+          type: string
+          format: email
+          example: sender@example.com
+        from_name:
+          type: string
+          example: Sender Name
+        to_email:
+          type: string
+          format: email
+          example: recipient@example.com
+        to_name:
+          type: string
+          example: Recipient Name
+        subject:
+          type: string
+          example: Hello from Chitthi
+        html_content:
+          type: string
+          example: '<h1>Hello!</h1>'
+        provider:
+          type: string
+          description: Optional provider hint
+          enum:
+            - sendgrid
+            - breevo
+            - mailersend
+          example: sendgrid
+
+    EmailResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Email sent successfully
+        data:
+          $ref: '#/components/schemas/EmailData'
+
+    EmailErrorResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: false
+        message:
+          type: string
+        error:
+          $ref: '#/components/schemas/ErrorData'
+
+    EmailData:
+      type: object
+      properties:
+        sent_to:
+          type: string
+          format: email
+          example: recipient@example.com
+        sent_from:
+          type: string
+          format: email
+          example: sender@example.com
+        subject:
+          type: string
+          example: Hello from Chitthi
+        provider:
+          type: string
+          example: sendgrid
+
+    ErrorData:
+      type: object
+      properties:
+        code:
+          type: string
+          example: EMAIL_SEND_FAILED
+        message:
+          type: string
+          example: Failed to send email
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: invalid credentials
+
+    VersionResponse:
+      type: object
+      properties:
+        version:
+          type: string
+          example: v1.0.0
+        service:
+          type: string
+          example: Chitthi Email Service
+        status:
+          type: string
+          example: running
+        timestamp:
+          type: string
+          description: Unix timestamp as string
+          example: '1713484800'

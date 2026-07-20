@@ -8,6 +8,10 @@ import (
 )
 
 type Config struct {
+	JWTSecret        string
+	BFFSecret        string
+	GoogleClientID   string
+	ApplicationName  string
 	Port             string
 	RabbitMQURL      string
 	RedisURL         string
@@ -16,12 +20,7 @@ type Config struct {
 	SendGridAPIKey   string
 	SendGridRegion   string
 	MailerSendAPIKey string
-	SMTPHost         string
-	SMTPPort         string
-	SMTPUsername     string
-	SMTPPassword     string
-	SMTPFrom         string
-	SMTPUseTLS       bool
+	AllowedOrigins   string
 }
 
 func getEnv(key, fallback string) string {
@@ -39,6 +38,10 @@ func LoadConfig() Config {
 	}
 
 	return Config{
+		JWTSecret:        getEnv("JWT_SECRET", "your-secret-key"),
+		BFFSecret:        getEnv("CHITTHI_BFF_SECRET", ""),
+		GoogleClientID:   getEnv("GOOGLE_CLIENT_ID", ""),
+		ApplicationName:  getEnv("APPLICATION_NAME", "chitthi"),
 		Port:             getEnv("PORT", "8080"),
 		RabbitMQURL:      getEnv("RABBITMQ_URL", ""),
 		RedisURL:         getEnv("REDIS_URL", ""),
@@ -47,11 +50,6 @@ func LoadConfig() Config {
 		SendGridAPIKey:   getEnv("SENDGRID_API_KEY", ""),
 		SendGridRegion:   getEnv("SENDGRID_REGION", "global"),
 		MailerSendAPIKey: getEnv("MAILERSEND_API_KEY", ""),
-		SMTPHost:         getEnv("SMTP_HOST", ""),
-		SMTPPort:         getEnv("SMTP_PORT", "587"),
-		SMTPUsername:     getEnv("SMTP_USERNAME", ""),
-		SMTPPassword:     getEnv("SMTP_PASSWORD", ""),
-		SMTPFrom:         getEnv("SMTP_FROM", ""),
-		SMTPUseTLS:       getEnv("SMTP_USE_TLS", "true") == "true",
+		AllowedOrigins:   getEnv("ALLOWED_ORIGINS", "*"),
 	}
 }

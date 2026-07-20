@@ -1,0 +1,174 @@
+package services
+
+import (
+	"context"
+	"crypto/rand"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/imsks/chitthi/internal/database/postgres"
+)
+
+type APIKeyServiceImpl struct {
+	// You can add dependencies like database connection here
+	apiKeyDAO         *postgres.APIKeyDAO
+	providerApiKeyDAO *postgres.ProviderAPIKeysDAO
+}
+
+func NewAPIKeyService(apiKeyDAO *postgres.APIKeyDAO, providerApiKeyDAO *postgres.ProviderAPIKeysDAO) *APIKeyServiceImpl {
+	return &APIKeyServiceImpl{apiKeyDAO: apiKeyDAO, providerApiKeyDAO: providerApiKeyDAO}
+}
+
+// NormalizeUserAPIKeyExpiry returns RFC3339 expiry; empty input defaults to one year from now (UTC).
+func NormalizeUserAPIKeyExpiry(expiresAt string) string {
+	if strings.TrimSpace(expiresAt) == "" {
+		return time.Now().UTC().AddDate(1, 0, 0).Format(time.RFC3339)
+	}
+	return expiresAt
+}
+
+var (
+	ErrSenderEmailRequired = errors.New("sender_email is required")
+	ErrSenderEmailInvalid  = errors.New("sender_email must be a valid email address")
+	ErrChitthiAPIKeyNotFound       = errors.New("api key not found")
+	ErrProviderCredentialNotFound  = errors.New("provider credentials not found")
+	ErrProviderAPIKeyRequired      = errors.New("api_key is required when adding a new provider credential")
+)
+
+// ValidateSenderEmail checks a minimal RFC-like shape for onboarding BYOK senders.
+func ValidateSenderEmail(email string) error {
+	e := strings.TrimSpace(email)
+	if e == "" {
+		return ErrSenderEmailRequired
+	}
+	if strings.Count(e, "@") != 1 {
+		return ErrSenderEmailInvalid
+	}
+	at := strings.LastIndex(e, "@")
+	if at < 1 || at == len(e)-1 {
+		return ErrSenderEmailInvalid
+	}
+	return nil
+}
+
+func (s *APIKeyServiceImpl) CreateAPIKey(userID uint, expiresAt string) (string, error) {
+	apiKey := generateRandomAPIKey()
+	expiresAt = NormalizeUserAPIKeyExpiry(expiresAt)
+	_, err := s.apiKeyDAO.CreateAPIKey(context.Background(), userID, apiKey, expiresAt)
+	if err != nil {
+		return "", err
+	}
+	return apiKey, nil
+}
+
+func (s *APIKeyServiceImpl) AddProviderAPIKey(ctx context.Context, userID uint, provider string, apiKey string, senderEmail string) error {
+	if err := ValidateSenderEmail(senderEmail); err != nil {
+		return err
+	}
+	providerID, err := s.providerApiKeyDAO.GetProviderIDByName(ctx, provider)
+	if err != nil {
+		return err
+	}
+	key := strings.TrimSpace(apiKey)
+	if key == "" {
+		existingKey, fetchErr := s.providerApiKeyDAO.GetProviderAPIKeys(ctx, userID, providerID)
+		var resolveErr error
+		key, resolveErr = EffectiveProviderAPIKeyForUpsert("", existingKey, fetchErr)
+		if resolveErr != nil {
+			return resolveErr
+		}
+	}
+	_, err = s.providerApiKeyDAO.AddProviderAPIKey(ctx, userID, providerID, key, strings.TrimSpace(senderEmail))
+	return err
+}
+
+// GetProviderCredentialSummaries lists configured providers with verified sender emails (secrets are omitted).
+func (s *APIKeyServiceImpl) GetProviderCredentialSummaries(ctx context.Context, userID uint) ([]postgres.ProviderCredentialSummary, error) {
+	return s.providerApiKeyDAO.GetConfiguredProviderSummaries(ctx, userID)
+}
+
+func (s *APIKeyServiceImpl) GetProviderAPIKey(ctx context.Context, userID uint, provider string) (string, error) {
+	providerID, err := s.providerApiKeyDAO.GetProviderIDByName(ctx, provider)
+	if err != nil {
+		return "", err
+	}
+	apiKey, err := s.providerApiKeyDAO.GetProviderAPIKeys(ctx, userID, providerID)
+	if err != nil {
+		return "", err
+	}
+	if apiKey == "" {
+		return "", fmt.Errorf("no API key found for provider %s", provider)
+	}
+	return apiKey, nil
+}
+
+func generateRandomAPIKey() string {
+	// Implement a secure random API key generator, for example using crypto/rand
+	key := make([]byte, 32) // 256-bit key
+	_, err := rand.Read(key)
+	if err != nil {
+		// Handle error
+		return ""
+	}
+	return fmt.Sprintf("%x", key) // Return the key as a hex string
+}
+
+func (s *APIKeyServiceImpl) GetAPIKeys(userID uint) ([]string, error) {
+	return s.apiKeyDAO.GetAPIKeys(context.Background(), userID)
+}
+
+func (s *APIKeyServiceImpl) GetProviderAPIKeys(ctx context.Context, userID uint) ([]string, error) {
+	return s.providerApiKeyDAO.GetConfiguredProviderNames(ctx, userID)
+}
+
+// EffectiveProviderAPIKey resolves the key to persist: non-empty trimmed input, else existing stored key, else ErrProviderAPIKeyRequired.
+// Exposed for unit tests of upsert semantics without Postgres.
+func EffectiveProviderAPIKeyForUpsert(trimmedIncoming string, existing string, existingErr error) (string, error) {
+	if strings.TrimSpace(trimmedIncoming) != "" {
+		return strings.TrimSpace(trimmedIncoming), nil
+	}
+	if existingErr != nil {
+		if errors.Is(existingErr, pgx.ErrNoRows) {
+			return "", ErrProviderAPIKeyRequired
+		}
+		return "", existingErr
+	}
+	if strings.TrimSpace(existing) == "" {
+		return "", ErrProviderAPIKeyRequired
+	}
+	return strings.TrimSpace(existing), nil
+}
+
+// GetDefaultSenderEmail returns the verified sender for the user's primary unified-send provider, if any.
+func (s *APIKeyServiceImpl) GetDefaultSenderEmail(ctx context.Context, userID uint) (string, error) {
+	cred, err := s.providerApiKeyDAO.GetPrimaryProviderCredential(ctx, userID)
+	if err != nil || cred == nil {
+		return "", nil
+	}
+	return strings.TrimSpace(cred.SenderEmail), nil
+}
+
+func (s *APIKeyServiceImpl) DeleteAPIKey(userID uint, apiKey string) error {
+	n, err := s.apiKeyDAO.DeleteUserAPIKey(context.Background(), userID, apiKey)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrChitthiAPIKeyNotFound
+	}
+	return nil
+}
+
+func (s *APIKeyServiceImpl) DeleteProviderAPIKey(ctx context.Context, userID uint, provider string) error {
+	n, err := s.providerApiKeyDAO.DeleteProviderByUserAndName(ctx, userID, provider)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrProviderCredentialNotFound
+	}
+	return nil
+}

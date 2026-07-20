@@ -59,26 +59,3 @@ func SendEmailErrorResponse(w http.ResponseWriter, statusCode int, message strin
 	}
 	SendJSONResponse(w, statusCode, response)
 }
-
-// SendLogsSuccessResponse sends a structured logs success response
-func SendLogsSuccessResponse(w http.ResponseWriter, logs interface{}) {
-	response := map[string]interface{}{
-		"status":  true,
-		"message": "Logs retrieved successfully",
-		"data":    logs,
-	}
-	SendJSONResponse(w, http.StatusOK, response)
-}
-
-// SendLogsErrorResponse sends a structured logs error response
-func SendLogsErrorResponse(w http.ResponseWriter, statusCode int, message string, errorCode string) {
-	response := model.LogsResponse{
-		Status:  false,
-		Message: message,
-		Error: &model.ErrorData{
-			Code:    errorCode,
-			Message: message,
-		},
-	}
-	SendJSONResponse(w, statusCode, response)
-}

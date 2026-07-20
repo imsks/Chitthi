@@ -1,5 +1,6 @@
 # Go binaries
 /server
+/main
 *.exe
 *.out
 *.test
@@ -18,11 +19,29 @@ vendor/
 # IDE/editor files
 .vscode/
 .idea/
+
+# Dev tooling
+tmp/
+air_tmp/
+logs/
+
+# Environment
+.env
+.env.*
+
+# Frontend (not needed for API image)
+web/
+
+# Docker
+docker-compose.yml
 *.swp
 
 # OS-specific
 .DS_Store
 Thumbs.db
 
-# Env files (we’ll map them with docker-compose)
+# Env files (compose uses env_file mapping)
 .env
+
+# Frontend has its own image; keeps API build context small
+web/

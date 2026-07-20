@@ -26,6 +26,8 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { useSession } from "next-auth/react"
+import { MarketingNavAuth } from "@/components/marketing-nav-auth"
 
 const fadeInUp = {
     initial: { opacity: 0, y: 20 },
@@ -42,11 +44,13 @@ const staggerChildren = {
 }
 
 export default function Home() {
-    return (
+	const { status } = useSession()
+
+	return (
         <div className='min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50'>
             {/* Header */}
             <header className='border-b bg-white/80 backdrop-blur-md sticky top-0 z-50'>
-                <div className='container mx-auto px-4 py-4 flex items-center justify-between'>
+                <div className='container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3'>
                     <motion.div
                         className='flex items-center space-x-2'
                         initial={{ opacity: 0, x: -20 }}
@@ -65,39 +69,48 @@ export default function Home() {
                         </div>
                     </motion.div>
 
-                    <motion.nav
-                        className='hidden md:flex items-center space-x-8'
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}>
-                        <Link
-                            href='#features'
-                            className='text-gray-600 hover:text-blue-600 transition-colors'>
-                            Features
-                        </Link>
-                        <Link
-                            href='/quick-start'
-                            className='text-gray-600 hover:text-blue-600 transition-colors'>
-                            Quick Start
-                        </Link>
-                        <Link
-                            href='/docs'
-                            className='text-gray-600 hover:text-blue-600 transition-colors'>
-                            Docs
-                        </Link>
-                        <Button
-                            asChild
-                            variant='outline'
-                            className='border-blue-200 hover:bg-blue-50'>
-                            <a
-                                href='https://github.com/imsks/chitthi'
-                                target='_blank'
-                                rel='noopener noreferrer'>
-                                <GitBranch className='w-4 h-4 mr-2' />
-                                GitHub
-                            </a>
-                        </Button>
-                    </motion.nav>
+                    <div className='flex flex-1 flex-wrap items-center justify-end gap-3 md:gap-4'>
+                        <motion.nav
+                            className='hidden md:flex items-center space-x-8'
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.2 }}>
+                            <Link
+                                href='#features'
+                                className='text-gray-600 hover:text-blue-600 transition-colors'>
+                                Features
+                            </Link>
+                            <Link
+                                href='/quick-start'
+                                className='text-gray-600 hover:text-blue-600 transition-colors'>
+                                Quick Start
+                            </Link>
+                            <Link
+                                href='/docs'
+                                className='text-gray-600 hover:text-blue-600 transition-colors'>
+                                Docs
+                            </Link>
+                        </motion.nav>
+                        <MarketingNavAuth />
+                        <motion.div
+                            className='hidden md:block'
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.2 }}>
+                            <Button
+                                asChild
+                                variant='outline'
+                                className='border-blue-200 hover:bg-blue-50'>
+                                <a
+                                    href='https://github.com/imsks/chitthi'
+                                    target='_blank'
+                                    rel='noopener noreferrer'>
+                                    <GitBranch className='w-4 h-4 mr-2' />
+                                    GitHub
+                                </a>
+                            </Button>
+                        </motion.div>
+                    </div>
                 </div>
             </header>
 
@@ -124,31 +137,40 @@ export default function Home() {
                         <p className='text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed'>
                             A modern email microservice built in Go with BYOK
                             approach and multi-provider support. Send emails
-                            securely through SendGrid, Breevo, MailerSend, or
-                            SMTP.
+                            securely through SendGrid, Breevo, or MailerSend,
+                            plus one Chitthi API key for unified sends.
                         </p>
 
                         <div className='flex flex-col sm:flex-row gap-4 justify-center items-center'>
-                            <Button
-                                asChild
-                                size='lg'
-                                className='bg-blue-600 hover:bg-blue-700 text-lg px-8'>
-                                <Link href='/quick-start'>
-                                    Get Started
-                                    <ArrowRight className='ml-2 w-5 h-5' />
-                                </Link>
-                            </Button>
+                            {status === "authenticated" ? (
+                                <Button
+                                    asChild
+                                    size='lg'
+                                    className='bg-blue-600 hover:bg-blue-700 text-lg px-8'>
+                                    <Link href='/dashboard'>
+                                        Go to dashboard
+                                        <ArrowRight className='ml-2 w-5 h-5' />
+                                    </Link>
+                                </Button>
+                            ) : (
+                                <Button
+                                    asChild
+                                    size='lg'
+                                    className='bg-blue-600 hover:bg-blue-700 text-lg px-8'>
+                                    <Link href='/login'>
+                                        Sign in
+                                        <ArrowRight className='ml-2 w-5 h-5' />
+                                    </Link>
+                                </Button>
+                            )}
                             <Button
                                 asChild
                                 variant='outline'
                                 size='lg'
-                                className='text-lg px-8 border-gray-300 hover:bg-gray-50'>
-                                <a
-                                    href='https://github.com/imsks/chitthi'
-                                    target='_blank'
-                                    rel='noopener noreferrer'>
-                                    View on GitHub
-                                </a>
+                                className='text-lg px-8 border-blue-200 hover:bg-blue-50'>
+                                <Link href='/quick-start'>
+                                    Quick Start
+                                </Link>
                             </Button>
                         </div>
                     </motion.div>
@@ -230,7 +252,7 @@ export default function Home() {
                                 icon: Globe,
                                 title: "Multi-Provider Support",
                                 description:
-                                    "Support for Breevo, SendGrid, MailerSend, and SMTP with automatic provider detection.",
+                                    "Support for Breevo, SendGrid, and MailerSend with automatic detection and unified Chitthi API keys.",
                                 color: "text-blue-600",
                                 bgColor: "bg-blue-50"
                             },
@@ -377,14 +399,11 @@ export default function Home() {
                                     </CardHeader>
                                     <CardContent className='pt-0'>
                                         <pre className='text-sm overflow-x-auto'>
-                                            <code>{`curl -X POST https://localhost:8000/send-email \\
+                                            <code>{`curl -X POST https://localhost:8080/send-email \\
   -H "Content-Type: application/json" \\
-  -H "X-SMTP-Host: smtp.gmail.com" \\
-  -H "X-SMTP-Username: your-email@gmail.com" \\
-  -H "X-SMTP-Password: your-app-password" \\
+  -H "Authorization: Bearer YOUR_CHITTHI_API_KEY" \\
   -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com", 
+    "to_email": "recipient@example.com",
     "subject": "Test Email",
     "html_content": "<h1>Hello World!</h1>"
   }'`}</code>

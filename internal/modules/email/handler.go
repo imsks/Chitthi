@@ -3,17 +3,18 @@ package email
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
+	"strings"
 
 	"github.com/imsks/chitthi/internal/utils"
 )
 
 type Handler struct {
-	service *Service
+	service  *Service
+	resolver *ChitthiResolver
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service *Service, resolver *ChitthiResolver) *Handler {
+	return &Handler{service: service, resolver: resolver}
 }
 
 func (h *Handler) SendEmail(w http.ResponseWriter, r *http.Request) {
@@ -28,95 +29,34 @@ func (h *Handler) SendEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.ToEmail == "" || req.Subject == "" {
-		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "Missing required fields: to_email and subject", "MISSING_REQUIRED_FIELDS")
+	chitthiKey := ChitthiAPIKeyFromBodyOrHeader(r, req.APIKey)
+	if chitthiKey == "" || strings.TrimSpace(req.ToEmail) == "" || strings.TrimSpace(req.Subject) == "" || strings.TrimSpace(req.HTMLContent) == "" {
+		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "Missing required fields: api_key (or Authorization / X-Chitthi-API-Key), to_email, subject and html_content", "MISSING_REQUIRED_FIELDS")
 		return
 	}
 
-	// Check if any credentials are provided (either in headers or request body)
-	credentials := extractCredentialsFromHeaders(r)
-	hasCredentials := len(credentials) > 0 || req.BreevoAPIKey != "" || req.SendGridAPIKey != "" || req.MailerSendAPIKey != ""
-
-	if !hasCredentials {
-		utils.SendEmailErrorResponse(w, http.StatusBadRequest, "No email provider credentials provided. Please provide API keys in headers or request body.", "NO_CREDENTIALS_PROVIDED")
+	if h.resolver == nil {
+		utils.SendEmailErrorResponse(w, http.StatusInternalServerError, "Email resolver is not configured", "EMAIL_RESOLVER_NOT_CONFIGURED")
 		return
 	}
 
-	// Add credentials to the request
-	req.Credentials = credentials
+	providerCredentials, err := h.resolver.ResolveAll(r.Context(), chitthiKey)
+	if err != nil {
+		msg := err.Error()
+		if strings.Contains(msg, "invalid or expired Chitthi API key") {
+			utils.SendEmailErrorResponse(w, http.StatusUnauthorized, msg, "CHITTHI_KEY_INVALID")
+			return
+		}
+		utils.SendEmailErrorResponse(w, http.StatusUnprocessableEntity, msg, "CHITTHI_PROVIDER_RESOLVE_FAILED")
+		return
+	}
 
-	// Send email and get result
-	result := h.service.SendEmail(r.Context(), &req)
+	result := h.service.SendEmailWithProviders(r.Context(), &req, providerCredentials)
 
 	if !result.Success {
-		// Email sending failed
 		utils.SendEmailErrorResponse(w, http.StatusInternalServerError, "Failed to send email: "+result.Error.Error(), "EMAIL_SEND_FAILED")
 		return
 	}
 
-	// Email sent successfully, return structured response
 	utils.SendEmailSuccessResponse(w, result.EmailData)
-}
-
-// extractCredentialsFromHeaders extracts all credential headers
-func extractCredentialsFromHeaders(r *http.Request) map[string]string {
-	credentials := make(map[string]string)
-
-	// API Keys
-	if apiKey := r.Header.Get("X-Breevo-API-Key"); apiKey != "" {
-		credentials["breevo_api_key"] = apiKey
-	}
-	if apiKey := r.Header.Get("X-SendGrid-API-Key"); apiKey != "" {
-		credentials["sendgrid_api_key"] = apiKey
-	}
-	if region := r.Header.Get("X-SendGrid-Region"); region != "" {
-		credentials["sendgrid_region"] = region
-	}
-	if apiKey := r.Header.Get("X-MailerSend-API-Key"); apiKey != "" {
-		credentials["mailersend_api_key"] = apiKey
-	}
-
-	// SMTP Credentials
-	if host := r.Header.Get("X-SMTP-Host"); host != "" {
-		credentials["smtp_host"] = host
-	}
-	if port := r.Header.Get("X-SMTP-Port"); port != "" {
-		credentials["smtp_port"] = port
-	}
-	if username := r.Header.Get("X-SMTP-Username"); username != "" {
-		credentials["smtp_username"] = username
-	}
-	if password := r.Header.Get("X-SMTP-Password"); password != "" {
-		credentials["smtp_password"] = password
-	}
-	if from := r.Header.Get("X-SMTP-From"); from != "" {
-		credentials["smtp_from"] = from
-	}
-	if useTLS := r.Header.Get("X-SMTP-Use-TLS"); useTLS != "" {
-		credentials["smtp_use_tls"] = useTLS
-	}
-
-	return credentials
-}
-
-func (h *Handler) GetLogs(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		utils.SendLogsErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed", "METHOD_NOT_ALLOWED")
-		return
-	}
-
-	limit := 10
-	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
-			limit = l
-		}
-	}
-
-	logs, err := h.service.GetLogs(r.Context(), limit)
-	if err != nil {
-		utils.SendLogsErrorResponse(w, http.StatusInternalServerError, "Failed to fetch logs: "+err.Error(), "LOGS_FETCH_FAILED")
-		return
-	}
-
-	utils.SendLogsSuccessResponse(w, logs)
 }

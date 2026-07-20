@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS email_logs (
+	id SERIAL PRIMARY KEY,
+	recipient_email TEXT NOT NULL,
+	subject TEXT NOT NULL,
+	provider TEXT NOT NULL,
+	status TEXT NOT NULL,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

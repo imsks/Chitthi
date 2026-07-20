@@ -21,3 +21,5 @@ web/.vercel
 # typescript
 web/*.tsbuildinfo
 web/next-env.d.ts
+
+.env.production

@@ -1,49 +1,91 @@
-version: "3.3"
-
 services:
-    app:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        container_name: chitthi_app
-        ports:
-            - "8080:8080"
-        depends_on:
-            - db
-            - redis
-        env_file:
-            - .env
-        volumes:
-            - .:/app
-            - air_tmp:/app/tmp
-        command: ["air"]
-        restart: unless-stopped
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chitthi_app
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - air_tmp:/app/tmp
+    command: ["air"]
+    restart: unless-stopped
+    networks:
+      - chitthi
 
-    redis:
-        image: redis:7
-        container_name: chitthi_redis
-        ports:
-            - "6543:6543"
-        volumes:
-            - redis_data:/data
-        restart: unless-stopped
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: chitthi_web
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      NEXT_PUBLIC_API_URL: http://app:8080
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      INTERNAL_API_URL: http://app:8080
+      WATCHPACK_POLLING: "true"
+    depends_on:
+      app:
+        condition: service_started
+    volumes:
+      - ./web:/app
+      - web_node_modules:/app/node_modules
+    restart: unless-stopped
+    networks:
+      - chitthi
 
-    db:
-        image: postgres:15
-        container_name: chitthi_db
-        ports:
-            - "5432:5432"
-        env_file:
-            - .env
-        environment:
-            POSTGRES_PASSWORD: postgres
-            POSTGRES_USER: postgres
-            POSTGRES_DB: chitthi
-        volumes:
-            - postgres_data:/var/lib/postgresql/data
-        restart: unless-stopped
+  redis:
+    image: redis:7
+    platform: "linux/amd64"
+    container_name: chitthi_redis
+    ports:
+      # Host port (avoid clash if another Redis uses 6379). In Compose, use host name `redis` and port 6379.
+      - "${CHITTHI_REDIS_PORT:-16379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - chitthi
+
+  db:
+    image: postgres:15
+    platform: "linux/amd64"
+    container_name: chitthi_db
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/pg-docker-entrypoint.sh:/pg-docker-entrypoint.sh:ro
+    entrypoint: ["/bin/bash", "/pg-docker-entrypoint.sh"]
+    restart: unless-stopped
+    networks:
+      - chitthi
+
+networks:
+  chitthi:
+    driver: bridge
 
 volumes:
-    redis_data:
-    postgres_data:
-    air_tmp:
+  redis_data:
+  postgres_data:
+  air_tmp:
+  web_node_modules:

@@ -428,16 +428,11 @@ go run cmd/main.go`}
                                         </h3>
                                         <CodeBlock
                                             id='test-api'
-                                            code={`curl -X POST https://localhost:8000/send-email \\
+                                            code={`curl -X POST http://localhost:8080/send-email \\
   -H "Content-Type: application/json" \\
-  -H "X-SMTP-Host: smtp.gmail.com" \\
-  -H "X-SMTP-Port: 587" \\
-  -H "X-SMTP-Username: your-email@gmail.com" \\
-  -H "X-SMTP-Password: your-app-password" \\
-  -H "X-SMTP-From: your-email@gmail.com" \\
-  -H "X-SMTP-Use-TLS: true" \\
+  -H "X-SendGrid-API-Key: your-sendgrid-key" \\
   -d '{
-    "from_email": "sender@example.com",
+    "from_email": "verified@yourdomain.com",
     "to_email": "recipient@example.com",
     "subject": "Test Email",
     "html_content": "<h1>Hello World!</h1>"
@@ -529,34 +524,22 @@ go run cmd/main.go`}
                                                         </div>
                                                         <div>
                                                             <strong>
-                                                                For SMTP:
+                                                                Chitthi API key:
                                                             </strong>
+                                                            <div className='ml-4 mt-1 space-y-1'>
+                                                                <code>Authorization: Bearer {'<chitthi_key>'}</code>
+                                                                <div>
+                                                                    or{" "}
+                                                                    <code>X-Chitthi-API-Key: {'<chitthi_key>'}</code>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className='pt-2'>
+                                                            <strong>Or explicit provider:</strong>
                                                         </div>
                                                         <div className='ml-4 space-y-1'>
-                                                            <div>
-                                                                <code>
-                                                                    X-SMTP-Host:
-                                                                    smtp.gmail.com
-                                                                </code>
-                                                            </div>
-                                                            <div>
-                                                                <code>
-                                                                    X-SMTP-Port:
-                                                                    587
-                                                                </code>
-                                                            </div>
-                                                            <div>
-                                                                <code>
-                                                                    X-SMTP-Username:
-                                                                    your-email@gmail.com
-                                                                </code>
-                                                            </div>
-                                                            <div>
-                                                                <code>
-                                                                    X-SMTP-Password:
-                                                                    your-app-password
-                                                                </code>
-                                                            </div>
+                                                            <code>X-SendGrid-API-Key</code>, <code>X-Breevo-API-Key</code>,{" "}
+                                                            <code>X-MailerSend-API-Key</code>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -594,77 +577,8 @@ go run cmd/main.go`}
     "sent_to": "recipient@example.com",
     "sent_from": "sender@example.com", 
     "subject": "Email Subject",
-    "provider": "smtp",
-    "log_saved": true,
-    "log_id": 123
+    "provider": "sendgrid"
   }
-}`}
-                                                />
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className='flex items-center'>
-                                                <Badge className='mr-3 bg-blue-100 text-blue-800'>
-                                                    GET
-                                                </Badge>
-                                                Get Email Logs
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Retrieve email delivery logs
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent className='space-y-4'>
-                                            <div>
-                                                <h4 className='font-semibold mb-2'>
-                                                    Endpoint
-                                                </h4>
-                                                <code className='bg-gray-100 px-3 py-1 rounded text-sm'>
-                                                    GET /email-logs
-                                                </code>
-                                            </div>
-
-                                            <div>
-                                                <h4 className='font-semibold mb-2'>
-                                                    Query Parameters
-                                                </h4>
-                                                <div className='space-y-2'>
-                                                    <div>
-                                                        <code>limit</code>{" "}
-                                                        (optional): Number of
-                                                        logs to return (default:
-                                                        10)
-                                                    </div>
-                                                    <div>
-                                                        <code>offset</code>{" "}
-                                                        (optional): Number of
-                                                        logs to skip (default:
-                                                        0)
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <h4 className='font-semibold mb-2'>
-                                                    Response
-                                                </h4>
-                                                <CodeBlock
-                                                    id='email-logs-response'
-                                                    language='json'
-                                                    code={`{
-  "status": true,
-  "data": [
-    {
-      "id": 1,
-      "recipient_email": "recipient@example.com",
-      "subject": "Test Email",
-      "provider": "smtp",
-      "status": "sent",
-      "created_at": "2024-01-01T12:00:00Z"
-    }
-  ]
 }`}
                                                 />
                                             </div>
@@ -697,9 +611,9 @@ go run cmd/main.go`}
                                         <div className='grid md:grid-cols-2 gap-4'>
                                             {[
                                                 {
-                                                    name: "SMTP",
-                                                    header: "X-SMTP-*",
-                                                    desc: "Direct SMTP with STARTTLS"
+                                                    name: "Chitthi API key",
+                                                    header: "Authorization: Bearer or X-Chitthi-API-Key",
+                                                    desc: "Dashboard-stored provider + verified sender for unified POST /send-email"
                                                 },
                                                 {
                                                     name: "SendGrid",
@@ -738,11 +652,8 @@ go run cmd/main.go`}
                                     </CardContent>
                                 </Card>
 
-                                <Tabs defaultValue='smtp' className='w-full'>
-                                    <TabsList className='grid w-full grid-cols-4'>
-                                        <TabsTrigger value='smtp'>
-                                            SMTP
-                                        </TabsTrigger>
+                                <Tabs defaultValue='sendgrid' className='w-full'>
+                                    <TabsList className='grid w-full grid-cols-3'>
                                         <TabsTrigger value='sendgrid'>
                                             SendGrid
                                         </TabsTrigger>
@@ -753,91 +664,6 @@ go run cmd/main.go`}
                                             MailerSend
                                         </TabsTrigger>
                                     </TabsList>
-
-                                    <TabsContent
-                                        value='smtp'
-                                        className='space-y-4'>
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle>
-                                                    SMTP Configuration
-                                                </CardTitle>
-                                                <CardDescription>
-                                                    Direct SMTP with STARTTLS
-                                                    support
-                                                </CardDescription>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <div className='space-y-4'>
-                                                    <div>
-                                                        <h4 className='font-semibold mb-2'>
-                                                            Required Headers
-                                                        </h4>
-                                                        <div className='space-y-1 text-sm'>
-                                                            <div>
-                                                                <code>
-                                                                    X-SMTP-Host:
-                                                                    smtp.gmail.com
-                                                                </code>
-                                                            </div>
-                                                            <div>
-                                                                <code>
-                                                                    X-SMTP-Port:
-                                                                    587
-                                                                </code>
-                                                            </div>
-                                                            <div>
-                                                                <code>
-                                                                    X-SMTP-Username:
-                                                                    your-email@gmail.com
-                                                                </code>
-                                                            </div>
-                                                            <div>
-                                                                <code>
-                                                                    X-SMTP-Password:
-                                                                    your-app-password
-                                                                </code>
-                                                            </div>
-                                                            <div>
-                                                                <code>
-                                                                    X-SMTP-From:
-                                                                    your-email@gmail.com
-                                                                </code>
-                                                            </div>
-                                                            <div>
-                                                                <code>
-                                                                    X-SMTP-Use-TLS:
-                                                                    true
-                                                                </code>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <h4 className='font-semibold mb-2'>
-                                                            Example
-                                                        </h4>
-                                                        <CodeBlock
-                                                            id='smtp-example'
-                                                            code={`curl -X POST https://YOUR_APP.up.railway.app/send-email \\
-  -H "Content-Type: application/json" \\
-  -H "X-SMTP-Host: smtp.gmail.com" \\
-  -H "X-SMTP-Port: 587" \\
-  -H "X-SMTP-Username: your-email@gmail.com" \\
-  -H "X-SMTP-Password: your-app-password" \\
-  -H "X-SMTP-From: your-email@gmail.com" \\
-  -H "X-SMTP-Use-TLS: true" \\
-  -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1>"
-  }'`}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    </TabsContent>
 
                                     <TabsContent
                                         value='sendgrid'
@@ -1056,21 +882,13 @@ PORT=8080
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable
 
 # Redis Configuration
-REDIS_URL=redis://localhost:6543
+REDIS_URL=redis://localhost:6379
 
 # Email Provider Configuration (Optional - for fallback)
 BREEVO_API_KEY=your_breevo_api_key
 SENDGRID_API_KEY=your_sendgrid_api_key
 SENDGRID_REGION=global
-MAILERSEND_API_KEY=your_mailersend_api_key
-
-# SMTP Configuration (Optional - for fallback)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM=your-email@gmail.com
-SMTP_USE_TLS=true`}
+MAILERSEND_API_KEY=your_mailersend_api_key`}
                                         />
                                     </CardContent>
                                 </Card>
@@ -1090,8 +908,9 @@ SMTP_USE_TLS=true`}
                                                         PostgreSQL
                                                     </h4>
                                                     <p className='text-sm text-gray-600 mb-2'>
-                                                        Used for email logging
-                                                        and analytics
+                                                        Stores users, providers,
+                                                        unified API keys, and daily
+                                                        metrics
                                                     </p>
                                                     <CodeBlock
                                                         id='postgres-setup'
@@ -1128,7 +947,7 @@ SMTP_USE_TLS=true`}
                                                         id='redis-setup'
                                                         code={`docker run -d \\
   --name chitthi-redis \\
-  -p 6543:6543 \\
+  -p 6379:6379 \\
   redis:7-alpine`}
                                                     />
                                                 </div>
@@ -1147,8 +966,24 @@ SMTP_USE_TLS=true`}
                                             the required tables
                                         </CardDescription>
                                     </CardHeader>
-                                    <CardContent>
+                                        <CardContent>
                                         <div className='space-y-4'>
+                                            <p className='text-sm text-gray-600'>
+                                                Install the{" "}
+                                                <a
+                                                    href='https://github.com/golang-migrate/migrate'
+                                                    className='text-blue-600 underline'
+                                                    target='_blank'
+                                                    rel='noopener noreferrer'>
+                                                    golang-migrate
+                                                </a>{" "}
+                                                CLI. Run from the repository root
+                                                (not from{" "}
+                                                <code className='bg-gray-100 px-1 rounded'>
+                                                    web/
+                                                </code>
+                                                ).
+                                            </p>
                                             <div>
                                                 <h4 className='font-semibold mb-2'>
                                                     Run Migrations
@@ -1161,11 +996,11 @@ SMTP_USE_TLS=true`}
 
                                             <div>
                                                 <h4 className='font-semibold mb-2'>
-                                                    Rollback Migrations
+                                                    Rollback One Step
                                                 </h4>
                                                 <CodeBlock
                                                     id='rollback-migrations'
-                                                    code={`migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down`}
+                                                    code={`migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down 1`}
                                                 />
                                             </div>
                                         </div>

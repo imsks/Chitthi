@@ -1,0 +1,2 @@
+ALTER TABLE provider_api_keys
+	ADD COLUMN IF NOT EXISTS sender_email TEXT NOT NULL DEFAULT '';

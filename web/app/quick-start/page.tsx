@@ -310,7 +310,7 @@ cd chitthi`}
                                             code={`PORT=8080
 
 # Redis config
-REDIS_URL=redis://redis:6543
+REDIS_URL=redis://redis:6379
 
 # Postgres config
 POSTGRES_USER=postgres
@@ -320,18 +320,11 @@ DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
 
 # Platform API Keys
 BREEVO_API_KEY=
+SENDGRID_API_KEY=
 MAILERSEND_API_KEY=
 
 # Message Queue
-RABBITMQ_URL=amqp://guest:guest@localhost:5672/
-
-# SMTP
-SMTP_HOST=
-SMTP_PORT=
-SMTP_USERNAME=
-SMTP_PASSWORD=
-SMTP_FROM=
-SMTP_USE_TLS=true`}
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/`}
                                         />
                                         <div className='flex items-center space-x-2'>
                                             <Download className='w-4 h-4 text-blue-600' />
@@ -343,7 +336,7 @@ SMTP_USE_TLS=true`}
                                                         `PORT=8080
 
 # Redis config
-REDIS_URL=redis://redis:6543
+REDIS_URL=redis://redis:6379
 
 # Postgres config
 POSTGRES_USER=postgres
@@ -353,18 +346,11 @@ DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
 
 # Platform API Keys
 BREEVO_API_KEY=
+SENDGRID_API_KEY=
 MAILERSEND_API_KEY=
 
 # Message Queue
-RABBITMQ_URL=amqp://guest:guest@localhost:5672/
-
-# SMTP
-SMTP_HOST=
-SMTP_PORT=
-SMTP_USERNAME=
-SMTP_PASSWORD=
-SMTP_FROM=
-SMTP_USE_TLS=true`,
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/`,
                                                         "env-download"
                                                     )
                                                 }>
@@ -416,14 +402,9 @@ go run cmd/main.go`}
                                         id='test-api'
                                         code={`curl -X POST http://localhost:8080/send-email \\
   -H "Content-Type: application/json" \\
-  -H "X-SMTP-Host: smtp.gmail.com" \\
-  -H "X-SMTP-Port: 587" \\
-  -H "X-SMTP-Username: your-email@gmail.com" \\
-  -H "X-SMTP-Password: your-app-password" \\
-  -H "X-SMTP-From: your-email@gmail.com" \\
-  -H "X-SMTP-Use-TLS: true" \\
+  -H "X-SendGrid-API-Key: your-sendgrid-key" \\
   -d '{
-    "from_email": "sender@example.com",
+    "from_email": "verified@yourdomain.com",
     "to_email": "recipient@example.com",
     "subject": "Test Email",
     "html_content": "<h1>Hello World!</h1>"

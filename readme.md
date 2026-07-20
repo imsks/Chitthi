@@ -1,182 +1,167 @@
 # 📬 Chitthi
 
 [![Version](https://img.shields.io/badge/Version-v1.0.0-green.svg)](https://github.com/imsks/chitthi)
-[![Go Version](https://img.shields.io/badge/Go-1.24.3-blue.svg)](https://golang.org)
+[![Go Version](https://img.shields.io/badge/Go-1.25.0-blue.svg)](https://golang.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
 
-A lightweight, production-ready email microservice built in Go with **BYOK (Bring Your Own Key)** approach and multi-provider support.
+Email microservice in Go with **BYOK** (bring your own provider keys), optional **Next.js** UI in `web/`, **Postgres**, and **Redis** — all runnable with **Docker Compose**.
 
 ---
 
-## 📋 Table of Contents
+## Table of contents
 
--   [Overview](#overview)
--   [Features](#features)
--   [Quick Start](#quick-start)
--   [API Documentation](#api-documentation)
--   [Email Providers](#email-providers)
--   [Configuration](#configuration)
--   [Development](#development)
--   [Deployment](#deployment)
--   [Contributing](#contributing)
+- [Quick start](#quick-start)
+- [PostgreSQL (single DATABASE_URL)](#postgresql-single-database_url)
+- [API](#api)
+- [Providers](#providers)
+- [Configuration](#configuration)
+- [Migrations & testing](#migrations--testing)
 
 ---
 
-## 🎯 Overview
+## Quick start
 
-Chitthi is a modern email microservice designed for developers who want simplicity without sacrificing power. Built with Go, it provides a clean REST API for sending emails through multiple providers while maintaining complete control over your API keys.
-
-### Key Benefits
-
--   **🔐 BYOK Security**: Bring Your Own Key approach ensures your API keys stay secure
--   **🔄 Multi-Provider**: Support for Breevo, SendGrid, MailerSend, and SMTP
--   **⚡ Header-based Credentials**: Secure credential management via HTTP headers
--   **🧠 Smart Routing**: Automatic provider detection based on credentials
--   **📊 Comprehensive Logging**: PostgreSQL-based email tracking and analytics
--   **🚀 Production Ready**: Redis caching, error handling, and monitoring
-
----
-
-## ✨ Features
-
--   ✅ **Multi-Provider Support**: Breevo, SendGrid, MailerSend, SMTP
--   ✅ **BYOK (Bring Your Own Key)**: Users provide their own API keys
--   ✅ **Header-based Credentials**: Secure credential management
--   ✅ **Automatic Provider Detection**: Smart routing based on credentials
--   ✅ **Redis Caching**: Performance optimization
--   ✅ **PostgreSQL Logging**: Comprehensive email tracking
--   ✅ **Docker Ready**: Containerized deployment
--   ✅ **Production Ready**: Error handling, logging, monitoring
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
--   **Docker & Docker Compose**
--   **Go 1.24.3+** (for development)
--   **Node.js 18+** (for web frontend)
--   **Git**
-
-### Option 1: Using the Development Script (Recommended)
-
-```bash
-# Clone the repository
-git clone https://github.com/imsks/chitthi.git
-cd chitthi
-
-# Run the development script
-./dev.sh
-
-# Or run specific commands
-./dev.sh full      # Full setup
-./dev.sh infra     # Start infrastructure only
-./dev.sh install   # Install web dependencies
-./dev.sh backend   # Start Go backend
-./dev.sh frontend  # Start web frontend
-```
-
-### Option 2: Manual Setup
-
-#### 1. Clone the Repository
+**Requires:** [Docker](https://docs.docker.com/get-docker/) with Compose.
 
 ```bash
 git clone https://github.com/imsks/chitthi.git
 cd chitthi
 ```
 
-#### 2. Start Infrastructure
+Create schema (Postgres must be up; run this once after first `docker compose up` or start only `db` first):
 
 ```bash
-# Start Redis and PostgreSQL
-docker compose up redis db -d
+docker compose up -d db
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up
 ```
 
-#### 3. Install Web Dependencies
+Start the stack (Go API with Air, Next.js, Postgres, Redis):
 
 ```bash
-cd web
-npm install
-cd ..
+docker compose up --build
+# or: ./dev.sh up
 ```
 
-#### 4. Run the Services
+Or in the background:
 
 ```bash
-# Terminal 1: Start Go backend
-go run cmd/main.go
-
-# Terminal 2: Start web frontend
-cd web
-npm run dev
+docker compose up -d --build
 ```
 
-#### 5. Access the Applications
+**Next.js hot reload in Docker:** `web/` is bind-mounted while `node_modules` lives in the `web_node_modules` volume. On each start, `web/docker-entrypoint.sh` runs `npm ci` when `package-lock.json` changes or expected packages (e.g. `next`, `next-auth`) are missing—so new dependencies are picked up without relying on host `npm install`. The API always gets `REDIS_URL` / `DATABASE_URL` pointed at Compose service names (`redis`, `db`), and the API waits until Redis passes `redis-cli ping`.
 
--   **Backend API**: http://localhost:8080
--   **Web Frontend**: http://localhost:3000
--   **Documentation**: http://localhost:3000/docs
--   **Quick Start Guide**: http://localhost:3000/quick-start
+**Redis on the host:** if port `6379` is already taken (another Redis, Homebrew, etc.), Compose publishes Redis on **`localhost:${CHITTHI_REDIS_PORT:-16379}`** by default. Set `CHITTHI_REDIS_PORT` in `.env` to change it. `app` still uses `redis://redis:6379` on the Docker network.
 
-#### 6. Test the API
+Stop:
+
+```bash
+docker compose down
+# or: ./dev.sh down
+```
+
+**URLs**
+
+| Service | URL |
+| ------- | --- |
+| API | http://localhost:8080 |
+| Web | http://localhost:3000 |
+| Docs (in app) | http://localhost:3000/docs |
+
+The `web` container sets `NEXT_PUBLIC_API_URL=http://app:8080` so Next.js can proxy `/api/*` to the Go service inside the Compose network. The browser still uses `localhost:3000` and `localhost:8080` for direct API calls (e.g. curl).
+
+---
+
+## PostgreSQL (single DATABASE_URL)
+
+The **`db`** service does not use separate `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` in Compose. It reads **only `DATABASE_URL`** from `.env` and `scripts/pg-docker-entrypoint.sh` turns that into the env vars the official Postgres image expects.
+
+Use the **Docker service name `db`** in the URL so other containers resolve it:
+
+```env
+DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
+```
+
+### Connect from your computer
+
+Compose publishes Postgres on **`localhost:5432`**. Same user, password, and database name as in `DATABASE_URL` — only the host changes.
+
+From a shell (after `source .env` or paste your URL):
+
+```bash
+# Replace host db → localhost (keep user, password, port, database)
+psql "${DATABASE_URL/@db:/@localhost:}"
+```
+
+**GUI (DBeaver, TablePlus, etc.):** host `localhost`, port `5432`, database `chitthi`, user `postgres`, password `postgres` (or whatever you put in `DATABASE_URL`).
+
+**Inside the DB container** (no URL tweak):
+
+```bash
+docker compose exec db psql -U postgres -d chitthi
+```
+
+Use the `-U` / `-d` values that match your `DATABASE_URL`. Passwords with special characters must be **URL-encoded** inside `DATABASE_URL`.
+
+---
+
+**Send a test email**
 
 ```bash
 curl -X POST http://localhost:8080/send-email \
   -H "Content-Type: application/json" \
-  -H "X-SMTP-Host: smtp.gmail.com" \
-  -H "X-SMTP-Port: 587" \
-  -H "X-SMTP-Username: your-email@gmail.com" \
-  -H "X-SMTP-Password: your-app-password" \
-  -H "X-SMTP-From: your-email@gmail.com" \
-  -H "X-SMTP-Use-TLS: true" \
   -d '{
-    "from_email": "sender@example.com",
+    "api_key": "YOUR_CHITTHI_API_KEY",
+    "from_email": "verified-sender@yourdomain.com",
     "to_email": "recipient@example.com",
     "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1>"
+    "html_content": "<h1>Hello</h1>"
+  }'
+```
+
+Or with saved verified sender auto-fill (`from_email` omitted):
+
+```bash
+curl -X POST http://localhost:8080/send-email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "api_key": "YOUR_CHITTHI_API_KEY",
+    "to_email": "recipient@example.com",
+    "subject": "Test Email",
+    "html_content": "<h1>Hello</h1>"
   }'
 ```
 
 ---
 
-## 📚 API Documentation
+## API
 
-### Endpoints
+| Method | Endpoint | Description |
+| ------ | -------- | ----------- |
+| `POST` | `/send-email` | Send via Chitthi API key in request body with DB-backed provider failover |
+| `GET` | `/` | Health |
 
-| Method | Endpoint      | Description                 |
-| ------ | ------------- | --------------------------- |
-| `POST` | `/send-email` | Send email via any provider |
-| `GET`  | `/email-logs` | Retrieve email logs         |
-| `GET`  | `/`           | Health check                |
+### `POST /send-email`
 
-### Send Email
+**Required:** `api_key`, `to_email`, `subject`, `html_content` in JSON body.
 
-**Endpoint**: `POST /send-email`
+Provider credentials are loaded from DB using `api_key`, then attempted with failover priority: SendGrid → Breevo → MailerSend.
 
-**Headers**:
-
--   `Content-Type: application/json`
--   `X-SMTP-*` (for SMTP)
--   `X-SendGrid-API-Key` (for SendGrid)
--   `X-Breevo-API-Key` (for Breevo)
--   `X-MailerSend-API-Key` (for MailerSend)
-
-**Request Body**:
+**Body (example):**
 
 ```json
 {
+  "api_key": "YOUR_CHITTHI_API_KEY",
     "from_email": "sender@example.com",
-    "from_name": "Sender Name",
+    "from_name": "Sender",
     "to_email": "recipient@example.com",
-    "to_name": "Recipient Name",
-    "subject": "Email Subject",
-    "html_content": "<h1>Hello World!</h1><p>This is a test email.</p>"
+    "to_name": "Recipient",
+    "subject": "Subject",
+    "html_content": "<h1>Hello</h1>"
 }
 ```
 
-**Response**:
+**Success (example):**
 
 ```json
 {
@@ -185,313 +170,115 @@ curl -X POST http://localhost:8080/send-email \
     "data": {
         "sent_to": "recipient@example.com",
         "sent_from": "sender@example.com",
-        "subject": "Email Subject",
-        "provider": "smtp",
-        "log_saved": true,
-        "log_id": 123
+        "subject": "Subject",
+        "provider": "sendgrid"
     }
 }
 ```
 
-### Get Email Logs
+---
 
-**Endpoint**: `GET /email-logs`
+## Providers
 
-**Query Parameters**:
+| Provider | Resolution |
+| -------- | ---------- |
+| SendGrid | Attempted first if configured for the api_key owner |
+| Breevo | Attempted second if SendGrid fails |
+| MailerSend | Attempted third if previous providers fail |
 
--   `limit` (optional): Number of logs to return (default: 10)
--   `offset` (optional): Number of logs to skip (default: 0)
+**Send-email example**
 
-**Response**:
-
-```json
-{
-    "status": true,
-    "data": [
-        {
-            "id": 1,
-            "recipient_email": "recipient@example.com",
-            "subject": "Test Email",
-            "provider": "smtp",
-            "status": "sent",
-            "created_at": "2024-01-01T12:00:00Z"
-        }
-    ]
-}
+```bash
+curl -X POST http://localhost:8080/send-email \
+  -H "Content-Type: application/json" \
+  -d '{"api_key":"YOUR_CHITTHI_API_KEY","to_email":"c@d.com","subject":"Hi","html_content":"<p>Hi</p>"}'
 ```
+
+Resolution order: Chitthi API key resolves stored credentials and sends with failover in provider priority order.
 
 ---
 
-## 📧 Email Providers
+## Configuration
 
-### Supported Providers
+If `.env` is missing, `./dev.sh up` creates a starter file.
 
-| Provider       | Header Key             | Description               |
-| -------------- | ---------------------- | ------------------------- |
-| **SMTP**       | `X-SMTP-*`             | Direct SMTP with STARTTLS |
-| **SendGrid**   | `X-SendGrid-API-Key`   | SendGrid v3 API           |
-| **Breevo**     | `X-Breevo-API-Key`     | Breevo Email API          |
-| **MailerSend** | `X-MailerSend-API-Key` | MailerSend API            |
+**Postgres** is configured from **`DATABASE_URL` only** for the `db` container (see [PostgreSQL](#postgresql-single-database_url)). Use host **`db`** so `app` and `db` agree inside Compose.
 
-### Provider Examples
-
-#### SendGrid
-
-```bash
-curl -X POST http://localhost:8080/send-email \
-  -H "Content-Type: application/json" \
-  -H "X-SendGrid-API-Key: your-sendgrid-api-key" \
-  -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1>"
-  }'
-```
-
-#### Breevo
-
-```bash
-curl -X POST http://localhost:8080/send-email \
-  -H "Content-Type: application/json" \
-  -H "X-Breevo-API-Key: your-breevo-api-key" \
-  -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1>"
-  }'
-```
-
-#### MailerSend
-
-```bash
-curl -X POST http://localhost:8080/send-email \
-  -H "Content-Type: application/json" \
-  -H "X-MailerSend-API-Key: your-mailersend-api-key" \
-  -d '{
-    "from_email": "sender@example.com",
-    "to_email": "recipient@example.com",
-    "subject": "Test Email",
-    "html_content": "<h1>Hello World!</h1>"
-  }'
-```
-
-### Provider Priority
-
-1. **Header-based providers** (highest priority)
-2. **Request body API keys** (legacy support)
-3. **Environment-configured providers** (fallback)
-
----
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-Create a `.env` file in the root directory:
+**Same `.env`** also supplies the Go app, **NextAuth (Google)**, server-to-server auth, and optional provider keys:
 
 ```env
-# Server Configuration
 PORT=8080
+JWT_SECRET=use-a-long-random-string-in-production
+CHITTHI_BFF_SECRET=generate-with-openssl-rand-hex-32
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=generate-with-openssl-rand-base64-32
+DATABASE_URL=postgres://postgres:postgres@db:5432/chitthi?sslmode=disable
+REDIS_URL=redis://redis:6379
+```
 
-# Database Configuration
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable
+Use the **same** value for **`CHITTHI_BFF_SECRET`** in both the Go API and Next.js. After NextAuth signs you in, Next calls **`POST /api/v1/auth/upsert`** (with a Google ID token) to create/update the user in Postgres; authenticated **`/api/v1/*`** requests from the browser go through Next.js, which adds **`X-User-ID`** and **`X-Chitthi-BFF-Secret`** for the Go API.
 
-# Redis Configuration
-REDIS_URL=redis://localhost:6543
+Docker Compose sets **`INTERNAL_API_URL=http://app:8080`** on the `web` service so NextAuth can reach the Go API from the Next.js server. For local `npm run dev` with the API on your machine, set **`INTERNAL_API_URL=http://localhost:8080`**.
 
-# Email Provider Configuration (Optional - for fallback)
-BREEVO_API_KEY=your_breevo_api_key
-SENDGRID_API_KEY=your_sendgrid_api_key
+**Google Cloud Console** (OAuth 2.0 **Web client**): under **Authorized JavaScript origins**, add exactly what the browser uses. Local `next dev` is **`http://localhost:3000`** (not `https`—scheme must match or you get **Error 400: origin_mismatch**). Add your production `https://…` origin separately when you deploy.
+
+Under **Authorized redirect URIs**, add **`http://localhost:3000/api/auth/callback/google`** for local dev (NextAuth), plus your production callback URL when you deploy.
+
+Run migrations including **`000004`** (Google-only accounts: nullable `users.password_hash`) and **`000005`** (verified `sender_email` on `provider_api_keys`).
+
+Optional env-configured fallback provider keys:
+
+```env
+BREEVO_API_KEY=
+SENDGRID_API_KEY=
 SENDGRID_REGION=global
-MAILERSEND_API_KEY=your_mailersend_api_key
-
-# SMTP Configuration (Optional - for fallback)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM=your-email@gmail.com
-SMTP_USE_TLS=true
+MAILERSEND_API_KEY=
 ```
 
 ---
 
-## 🛠️ Development
+## Migrations & testing
 
-### Project Structure
+Install [golang-migrate](https://github.com/golang-migrate/migrate) CLI. With Compose exposing Postgres on **localhost:5432**, connect using the same credentials as `DATABASE_URL` but host **`localhost`**:
+
+```bash
+migrate -path migrations -database "${DATABASE_URL/@db:/@localhost:}" up
+migrate -path migrations -database "${DATABASE_URL/@db:/@localhost:}" down 1
+```
+
+Or explicitly:
+
+```bash
+migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up
+```
+
+On the host (Go toolchain):
+
+```bash
+go test ./...
+```
+
+### Layout
 
 ```
 chitthi/
-├── cmd/                    # Application entry point
-│   └── main.go
-├── internal/               # Core business logic
-│   ├── config/            # Configuration management
-│   ├── database/          # Database connections
-│   ├── email/             # Email provider implementations
-│   ├── handler/           # HTTP handlers
-│   ├── model/             # Data models
-│   └── modules/           # Business logic modules
-├── migrations/            # Database migrations
-├── docker-compose.yml     # Infrastructure setup
-├── Dockerfile            # Container configuration
-└── go.mod               # Go dependencies
-```
-
-### Development Commands
-
-```bash
-# Run with hot reload (requires air)
-air
-
-# Run directly
-go run cmd/main.go
-
-# Run tests
-go test ./...
-
-# Build for production
-go build -o main cmd/main.go
-```
-
-### Database Migrations
-
-```bash
-# Run migrations
-migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" up
-
-# Rollback migrations
-migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/chitthi?sslmode=disable" down
+├── cmd/              # main
+├── internal/         # API, DB, email providers
+├── migrations/
+├── scripts/          # pg-docker-entrypoint.sh
+├── web/              # Next.js (Dockerfile + docker-compose service `web`)
+├── Dockerfile        # Go + Air (service `app`)
+├── docker-compose.yml
+├── dev.sh            # optional: ./dev.sh up | down
+└── go.mod
 ```
 
 ---
 
-## 🚀 Deployment
+## License
 
-### Docker Deployment
+MIT — see [LICENSE](LICENSE).
 
-```bash
-# Start all services
-docker compose up --build
-
-# Run in background
-docker compose up -d --build
-
-# View logs
-docker compose logs -f
-```
-
-### Production Deployment
-
-```bash
-# Build production image
-docker build -t chitthi-app .
-
-# Run with environment variables
-docker run -p 8080:8080 \
-  -e DATABASE_URL="postgres://..." \
-  -e REDIS_URL="redis://..." \
-  chitthi-app
-```
-
-### Production Checklist
-
--   [ ] Set `APP_ENV=production`
--   [ ] Configure database URLs
--   [ ] Set API keys for email providers
--   [ ] Set up Redis for caching
--   [ ] Configure logging levels
--   [ ] Set up monitoring and alerting
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-### 1. Fork the Repository
-
-```bash
-git clone https://github.com/imsks/chitthi.git
-cd chitthi
-```
-
-### 2. Create a Feature Branch
-
-```bash
-git checkout -b feature/your-feature-name
-```
-
-### 3. Make Your Changes
-
--   Follow the existing code style
--   Add tests for new functionality
--   Update documentation as needed
-
-### 4. Test Your Changes
-
-```bash
-go test ./...
-```
-
-### 5. Submit a Pull Request
-
--   Provide a clear description of your changes
--   Include any relevant issue numbers
--   Ensure all tests pass
-
-### Development Guidelines
-
--   **Code Style**: Follow Go conventions
--   **Documentation**: Update README and API docs
--   **Testing**: Add tests for new features
--   **Security**: Follow security best practices
--   **Performance**: Consider performance implications
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🆘 Support
-
-### Getting Help
-
-1. **Check Documentation**: Review this README and API docs
-2. **Search Issues**: Look for similar issues in the repository
-3. **Create Issue**: Open a new issue with detailed information
-4. **Community**: Join our community discussions
-
-### Common Issues
-
--   **Database Connection**: Ensure PostgreSQL is running and accessible
--   **Email Delivery**: Check provider API keys and credentials
--   **Redis Connection**: Verify Redis is running on the correct port
-
-### Contact
-
--   **Email**: sachinkshuklaoo7@email.com
--   **Issues**: [GitHub Issues](https://github.com/imsks/chitthi/issues)
--   **Discussions**: [GitHub Discussions](https://github.com/imsks/chitthi/discussions)
-
----
-
-## 🎯 Roadmap
-
--   [ ] **Rate Limiting**: Redis-based rate limiting
--   [ ] **Queue System**: RabbitMQ integration for async processing
--   [ ] **Admin Dashboard**: Web interface for monitoring
--   [ ] **Email Templates**: Template management system
--   [ ] **Bulk Sending**: Support for bulk email operations
--   [ ] **Analytics**: Email delivery analytics and reporting
--   [ ] **Multi-tenant**: Support for multiple organizations
-
----
-
-**Built with ❤️ by Sachin in 🇮🇳**
-
-_Chitthi - Empowering developers with simple email solutions_
+Issues: [github.com/imsks/chitthi/issues](https://github.com/imsks/chitthi/issues)

@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/imsks/chitthi/internal/config"
+	"github.com/imsks/chitthi/internal/database/postgres"
 	adapters "github.com/imsks/chitthi/internal/email"
 	"github.com/imsks/chitthi/internal/model"
 )
 
 type Service struct {
-	repo      *Repository
 	providers []adapters.EmailProvider // Fallback providers from config
 }
 
@@ -31,7 +32,6 @@ func NewService(cfg config.Config) *Service {
 	}
 
 	return &Service{
-		repo:      NewRepository(),
 		providers: providers,
 	}
 }
@@ -44,7 +44,7 @@ type SendEmailResult struct {
 	EmailData *model.EmailData
 }
 
-func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailResult {
+func (s *Service) SendEmail(_ context.Context, req *EmailRequest) *SendEmailResult {
 	emailReq := model.EmailRequest{
 		FromEmail:   req.FromEmail,
 		FromName:    req.FromName,
@@ -110,7 +110,7 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 			}
 
 			if lastError != nil {
-				s.logEmailAttempt(ctx, req, "all_failed", "failed", lastError)
+				log.Printf("email send failed (fallback): %v", lastError)
 				return &SendEmailResult{
 					Success:  false,
 					Error:    lastError,
@@ -159,7 +159,7 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 			}
 
 			if lastError != nil {
-				s.logEmailAttempt(ctx, req, "all_failed", "failed", lastError)
+				log.Printf("email send failed (header + fallback): %v", lastError)
 				return &SendEmailResult{
 					Success:  false,
 					Error:    lastError,
@@ -194,7 +194,7 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 
 			err = provider.SendEmail(emailReq)
 			if err != nil {
-				s.logEmailAttempt(ctx, req, providerName, "failed", err)
+				log.Printf("email send failed: provider=%s err=%v", providerName, err)
 				return &SendEmailResult{
 					Success:  false,
 					Error:    err,
@@ -210,9 +210,6 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 		}
 	}
 
-	// Email sent successfully, now log it
-	logResult := s.logEmailAttempt(ctx, req, providerName, "sent", nil)
-
 	return &SendEmailResult{
 		Success:  true,
 		Provider: providerName,
@@ -221,47 +218,112 @@ func (s *Service) SendEmail(ctx context.Context, req *EmailRequest) *SendEmailRe
 			SentFrom: req.FromEmail,
 			Subject:  req.Subject,
 			Provider: providerName,
-			LogSaved: logResult.Success,
-			LogID:    logResult.LogID,
-			LogError: logResult.Error,
 		},
 	}
 }
 
-// LogResult represents the result of logging operation
-type LogResult struct {
-	Success bool
-	LogID   *int
-	Error   string
+// credentialsMatchingProviderHint restricts failover to the named BYOK row when the client sends JSON `provider` (e.g. dashboard “test” for one row).
+// Empty or unrecognized hint preserves the full ordered credential list from the resolver.
+func credentialsMatchingProviderHint(credentials []*postgres.PrimaryProviderCredential, hint string) []*postgres.PrimaryProviderCredential {
+	h := strings.TrimSpace(strings.ToLower(hint))
+	if h == "" {
+		return credentials
+	}
+	out := make([]*postgres.PrimaryProviderCredential, 0)
+	for _, c := range credentials {
+		if c != nil && strings.EqualFold(strings.TrimSpace(c.ProviderName), h) {
+			out = append(out, c)
+		}
+	}
+	if len(out) == 0 {
+		return credentials
+	}
+	return out
 }
 
-// logEmailAttempt logs email attempt and returns result without affecting email sending
-func (s *Service) logEmailAttempt(ctx context.Context, req *EmailRequest, provider, status string, emailError error) *LogResult {
-	logEntry := &EmailLog{
-		RecipientEmail: req.ToEmail,
-		Subject:        req.Subject,
-		Provider:       provider,
-		Status:         status,
-	}
-
-	err := s.repo.InsertLog(ctx, logEntry)
-	if err != nil {
-		// Log the error but don't affect email sending
-		log.Printf("⚠️  Failed to log email attempt: %v", err)
-		return &LogResult{
+// SendEmailWithProviders sends an email using DB-backed provider credentials with failover.
+func (s *Service) SendEmailWithProviders(_ context.Context, req *EmailRequest, credentials []*postgres.PrimaryProviderCredential) *SendEmailResult {
+	credentials = credentialsMatchingProviderHint(credentials, req.Provider)
+	if len(credentials) == 0 {
+		return &SendEmailResult{
 			Success: false,
-			Error:   err.Error(),
+			Error:   fmt.Errorf("no provider credentials available"),
+			EmailData: &model.EmailData{
+				SentTo:   req.ToEmail,
+				SentFrom: req.FromEmail,
+				Subject:  req.Subject,
+			},
 		}
 	}
 
-	return &LogResult{
-		Success: true,
-		LogID:   &logEntry.ID,
+	baseReq := model.EmailRequest{
+		FromEmail:   req.FromEmail,
+		FromName:    req.FromName,
+		ToEmail:     req.ToEmail,
+		ToName:      req.ToName,
+		Subject:     req.Subject,
+		HTMLContent: req.HTMLContent,
 	}
-}
 
-func (s *Service) GetLogs(ctx context.Context, limit int) ([]EmailLog, error) {
-	return s.repo.GetLogs(ctx, limit)
+	var lastErr error
+	for _, cred := range credentials {
+		credMap := mapPrimaryCredential(cred)
+		if len(credMap) == 0 {
+			lastErr = fmt.Errorf("unsupported provider: %s", cred.ProviderName)
+			continue
+		}
+
+		providers := s.createProvidersFromHeaders(credMap)
+		if len(providers) == 0 {
+			lastErr = fmt.Errorf("no provider created for %s", cred.ProviderName)
+			continue
+		}
+
+		provider := providers[0]
+		emailReq := baseReq
+		if strings.TrimSpace(emailReq.FromEmail) == "" {
+			emailReq.FromEmail = strings.TrimSpace(cred.SenderEmail)
+		}
+
+		if strings.TrimSpace(emailReq.FromEmail) == "" {
+			lastErr = fmt.Errorf("sender email missing for provider %s", provider.GetName())
+			continue
+		}
+
+		if err := provider.SendEmail(emailReq); err != nil {
+			lastErr = err
+			log.Printf("⚠️  Provider %s failed: %v", provider.GetName(), err)
+			continue
+		}
+
+		log.Printf("📧 Email sent successfully via provider: %s", provider.GetName())
+		return &SendEmailResult{
+			Success:  true,
+			Provider: provider.GetName(),
+			EmailData: &model.EmailData{
+				SentTo:   req.ToEmail,
+				SentFrom: emailReq.FromEmail,
+				Subject:  req.Subject,
+				Provider: provider.GetName(),
+			},
+		}
+	}
+
+	if lastErr == nil {
+		lastErr = fmt.Errorf("all providers failed")
+	}
+
+	return &SendEmailResult{
+		Success:  false,
+		Error:    fmt.Errorf("all configured providers failed: %w", lastErr),
+		Provider: "all_failed",
+		EmailData: &model.EmailData{
+			SentTo:   req.ToEmail,
+			SentFrom: req.FromEmail,
+			Subject:  req.Subject,
+			Provider: "all_failed",
+		},
+	}
 }
 
 // getProviderByName finds a provider by name from the available providers
@@ -297,30 +359,6 @@ func (s *Service) createProvidersFromHeaders(credentials map[string]string) []ad
 		providers = append(providers, &adapters.MailerSendAdapter{APIKey: apiKey})
 	}
 
-	// Create SMTP provider if credentials are provided
-	if host := credentials["smtp_host"]; host != "" {
-		port := credentials["smtp_port"]
-		if port == "" {
-			port = "587" // Default port
-		}
-		username := credentials["smtp_username"]
-		password := credentials["smtp_password"]
-		from := credentials["smtp_from"]
-		useTLS := credentials["smtp_use_tls"] == "true"
-
-		if username != "" && password != "" {
-			smtpAdapter := &adapters.SMTPAdapter{
-				Host:     host,
-				Port:     port,
-				Username: username,
-				Password: password,
-				From:     from,
-				UseTLS:   useTLS,
-			}
-			providers = append(providers, smtpAdapter)
-		}
-	}
-
 	return providers
 }
 
@@ -336,12 +374,6 @@ func (s *Service) getProviderFromList(providers []adapters.EmailProvider, name s
 
 // detectProviderFromHeaders automatically detects which provider to use based on headers
 func (s *Service) detectProviderFromHeaders(credentials map[string]string) string {
-	// Check for SMTP credentials first (most specific)
-	if credentials["smtp_host"] != "" {
-		return "smtp"
-	}
-
-	// Check for API keys
 	if credentials["breevo_api_key"] != "" {
 		return "breevo"
 	}
