@@ -26,6 +26,9 @@ export function OnboardingModal() {
 	const [savingProvider, setSavingProvider] = useState(false)
 	const [generating, setGenerating] = useState(false)
 	const [completing, setCompleting] = useState(false)
+	const [dismissed, setDismissed] = useState(false)
+
+	const isOpen = !user?.is_onboarded && !dismissed
 
 	const handleProviderSave = async () => {
 		if (!providerKey.trim()) {
@@ -91,11 +94,8 @@ export function OnboardingModal() {
 	}
 
 	return (
-		<Dialog open={!user?.is_onboarded} onOpenChange={() => undefined}>
-			<DialogContent
-				className='border-blue-100 bg-white sm:max-w-2xl [&>button]:hidden'
-				onInteractOutside={(event) => event.preventDefault()}
-				onEscapeKeyDown={(event) => event.preventDefault()}>
+		<Dialog open={isOpen} onOpenChange={(open) => { if (!open) setDismissed(true) }}>
+			<DialogContent className='border-blue-100 bg-white sm:max-w-2xl'>
 				<DialogHeader>
 					<div className='inline-flex w-fit items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800'>
 						<Sparkles className='mr-2 h-4 w-4' />
@@ -220,13 +220,18 @@ export function OnboardingModal() {
 					</div>
 				</div>
 
-				<DialogFooter>
-					<Button variant='outline' disabled={step === 1} onClick={() => setStep(1)} className='border-blue-200 hover:bg-blue-50'>
-						Back
+				<DialogFooter className='flex-col sm:flex-row sm:justify-between'>
+					<Button variant='ghost' onClick={() => setDismissed(true)} className='text-sm text-muted-foreground hover:text-gray-700'>
+						I&apos;ll do this later
 					</Button>
-					<Button disabled={!generatedKey || completing} onClick={() => void handleComplete()} className='bg-blue-600 hover:bg-blue-700'>
-						{completing ? "Finishing..." : "Complete setup"}
-					</Button>
+					<div className='flex gap-2'>
+						<Button variant='outline' disabled={step === 1} onClick={() => setStep(1)} className='border-blue-200 hover:bg-blue-50'>
+							Back
+						</Button>
+						<Button disabled={!generatedKey || completing} onClick={() => void handleComplete()} className='bg-blue-600 hover:bg-blue-700'>
+							{completing ? "Finishing..." : "Complete setup"}
+						</Button>
+					</div>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
