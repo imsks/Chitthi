@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -23,7 +24,9 @@ func InitRedis(redisURL string) error {
 	}
 
 	Redis = redis.NewClient(opts)
-	if err := Redis.Ping(context.Background()).Err(); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := Redis.Ping(ctx).Err(); err != nil {
 		Redis = nil
 		return err
 	}
