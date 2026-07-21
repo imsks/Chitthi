@@ -1,20 +1,29 @@
-FROM golang:1.25-alpine
+# ---- Build Stage ----
+FROM golang:1.25-alpine AS builder
 
-# Install Air for hot reloading
-RUN go install github.com/air-verse/air@latest
+RUN apk add --no-cache ca-certificates git
 
-# Set working directory
-WORKDIR /app
+WORKDIR /build
 
-# Copy go mod files and download deps
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the rest of the code
 COPY . .
 
-# Expose the dev port
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /build/server ./cmd/main.go
+
+# ---- Runtime Stage ----
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates tzdata \
+    && addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+COPY --from=builder /build/server .
+
+USER appuser
+
 EXPOSE 8080
 
-# Run dev server with Air
-CMD ["air"]
+ENTRYPOINT ["./server"]
