@@ -20,7 +20,6 @@ type Config struct {
 	SendGridAPIKey   string
 	SendGridRegion   string
 	MailerSendAPIKey string
-	AllowedOrigins   string
 }
 
 func getEnv(key, fallback string) string {
@@ -50,6 +49,5 @@ func LoadConfig() Config {
 		SendGridAPIKey:   getEnv("SENDGRID_API_KEY", ""),
 		SendGridRegion:   getEnv("SENDGRID_REGION", "global"),
 		MailerSendAPIKey: getEnv("MAILERSEND_API_KEY", ""),
-		AllowedOrigins:   getEnv("ALLOWED_ORIGINS", "*"),
 	}
 }
