@@ -18,10 +18,12 @@ async function deriveEncryptionKey(secret: string): Promise<Uint8Array> {
 	const info = encoder.encode("NextAuth.js Generated Encryption Key")
 	const salt = new Uint8Array(32)
 
-	const baseKey = await crypto.subtle.importKey("raw", ikm, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
-	const prkBuffer = await crypto.subtle.sign("HMAC", baseKey, salt)
+	// HKDF-Extract: PRK = HMAC(salt, ikm) — salt is the HMAC key per RFC 5869
+	const saltKey = await crypto.subtle.importKey("raw", salt, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+	const prkBuffer = await crypto.subtle.sign("HMAC", saltKey, ikm)
 	const prk = await crypto.subtle.importKey("raw", prkBuffer, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
 
+	// HKDF-Expand: OKM = HMAC(PRK, info || 0x01)
 	const infoAndCounter = new Uint8Array(info.length + 1)
 	infoAndCounter.set(info, 0)
 	infoAndCounter[info.length] = 1
