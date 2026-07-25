@@ -599,7 +599,7 @@ export default function Home() {
                                 developers with simple email solutions.
                             </p>
                             <div className='text-sm text-gray-500'>
-                                Built with ❤️ by <a href="https://github.com/imsks" target="_blank" rel="noopener noreferrer" className="underline hover:text-white transition-colors">Sachin</a> in 🇮🇳
+                                Built with ❤️ in 🇮🇳
                             </div>
                         </div>
 
