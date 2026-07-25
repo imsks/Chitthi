@@ -29,7 +29,12 @@ import {
     FileText,
     Link as LinkIcon,
     Hash,
-    ChevronRight
+    ChevronRight,
+    Server,
+    Download,
+    Terminal,
+    GitBranch,
+    HardDrive
 } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -56,7 +61,8 @@ export default function DocsPage() {
         // { id: "api", label: "API Reference", icon: Code },
         { id: "providers", label: "Email Providers", icon: Globe },
         { id: "configuration", label: "Configuration", icon: Settings },
-        { id: "deployment", label: "Deployment", icon: Database }
+        { id: "deployment", label: "Deployment", icon: Database },
+        { id: "self-host", label: "Self-Host", icon: Server }
     ]
 
     const externalLinks = [
@@ -1148,6 +1154,341 @@ docker run -p 8080:8080 \\
                                                         abuse
                                                     </div>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+
+                        {activeSection === "self-host" && (
+                            <div className='space-y-8'>
+                                <div>
+                                    <h1 className='text-4xl font-bold text-gray-900 mb-4'>
+                                        Self-Host Chitthi
+                                    </h1>
+                                    <p className='text-xl text-gray-600 mb-6'>
+                                        Chitthi is fully open source (MIT
+                                        licensed). Run it on your own
+                                        infrastructure with complete control
+                                        over your data, keys, and email
+                                        delivery.
+                                    </p>
+
+                                    <div className='flex flex-wrap gap-2 mb-8'>
+                                        <Badge className='bg-blue-100 text-blue-800'>
+                                            Open Source
+                                        </Badge>
+                                        <Badge className='bg-green-100 text-green-800'>
+                                            MIT License
+                                        </Badge>
+                                        <Badge className='bg-purple-100 text-purple-800'>
+                                            Docker Ready
+                                        </Badge>
+                                        <Badge className='bg-yellow-100 text-yellow-800'>
+                                            BYOK
+                                        </Badge>
+                                    </div>
+                                </div>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className='flex items-center'>
+                                            <Shield className='w-5 h-5 mr-2 text-green-600' />
+                                            Why Self-Host?
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Own your email infrastructure
+                                            end-to-end
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className='grid md:grid-cols-2 gap-4'>
+                                            {[
+                                                "🔐 Full data ownership - your emails never leave your servers",
+                                                "🔑 BYOK - bring your own provider API keys",
+                                                "💰 No per-email fees - only pay your email provider",
+                                                "🛠️ Customize and extend the source freely",
+                                                "🌍 Deploy anywhere - cloud, VPS, or on-prem",
+                                                "📜 MIT licensed - use in commercial products"
+                                            ].map((benefit, index) => (
+                                                <div
+                                                    key={index}
+                                                    className='flex items-center space-x-2'>
+                                                    <CheckCircle className='w-5 h-5 text-green-600' />
+                                                    <span className='text-gray-700'>
+                                                        {
+                                                            benefit.split(
+                                                                " - "
+                                                            )[0]
+                                                        }
+                                                    </span>
+                                                    <span className='text-gray-500'>
+                                                        -{" "}
+                                                        {
+                                                            benefit.split(
+                                                                " - "
+                                                            )[1]
+                                                        }
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className='flex items-center'>
+                                            <HardDrive className='w-5 h-5 mr-2 text-blue-600' />
+                                            Prerequisites
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className='space-y-2'>
+                                            <div className='flex items-center space-x-2'>
+                                                <ChevronRight className='w-4 h-4 text-blue-600' />
+                                                <span>
+                                                    <strong>Docker</strong> &
+                                                    Docker Compose (recommended
+                                                    path)
+                                                </span>
+                                            </div>
+                                            <div className='flex items-center space-x-2'>
+                                                <ChevronRight className='w-4 h-4 text-blue-600' />
+                                                <span>
+                                                    <strong>Go 1.24+</strong>{" "}
+                                                    (only for building from
+                                                    source)
+                                                </span>
+                                            </div>
+                                            <div className='flex items-center space-x-2'>
+                                                <ChevronRight className='w-4 h-4 text-blue-600' />
+                                                <span>
+                                                    <strong>PostgreSQL</strong>{" "}
+                                                    for email logs & user data
+                                                </span>
+                                            </div>
+                                            <div className='flex items-center space-x-2'>
+                                                <ChevronRight className='w-4 h-4 text-blue-600' />
+                                                <span>
+                                                    <strong>Redis</strong> for
+                                                    caching and rate limiting
+                                                </span>
+                                            </div>
+                                            <div className='flex items-center space-x-2'>
+                                                <ChevronRight className='w-4 h-4 text-blue-600' />
+                                                <span>
+                                                    API keys from at least one{" "}
+                                                    <strong>
+                                                        email provider
+                                                    </strong>{" "}
+                                                    (SendGrid, Mailgun, SES,
+                                                    Resend)
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className='flex items-center'>
+                                            <GitBranch className='w-5 h-5 mr-2 text-purple-600' />
+                                            1. Clone the Repository
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <CodeBlock
+                                            id='self-host-clone'
+                                            code={`git clone https://github.com/imsks/chitthi.git
+cd chitthi`}
+                                        />
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className='flex items-center'>
+                                            <Settings className='w-5 h-5 mr-2 text-green-600' />
+                                            2. Configure Environment
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Create a{" "}
+                                            <code className='px-1 py-0.5 bg-gray-100 rounded text-sm'>
+                                                .env
+                                            </code>{" "}
+                                            file in the project root
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <CodeBlock
+                                            id='self-host-env'
+                                            language='env'
+                                            code={`# App
+APP_ENV=production
+PORT=8080
+
+# Database
+DATABASE_URL=postgres://chitthi:chitthi@postgres:5432/chitthi?sslmode=disable
+
+# Redis
+REDIS_URL=redis://redis:6379
+
+# Auth / Encryption
+JWT_SECRET=change-me-to-a-long-random-string
+ENCRYPTION_KEY=change-me-32-byte-key
+
+# Optional: default provider keys (users can also BYOK from dashboard)
+# SENDGRID_API_KEY=...
+# MAILGUN_API_KEY=...
+# RESEND_API_KEY=...`}
+                                        />
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className='flex items-center'>
+                                            <Database className='w-5 h-5 mr-2 text-blue-600' />
+                                            3. Start with Docker Compose
+                                        </CardTitle>
+                                        <CardDescription>
+                                            The fastest way to get Chitthi
+                                            running locally or in production
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <CodeBlock
+                                            id='self-host-compose'
+                                            code={`# Build and start all services (API, web, postgres, redis)
+docker compose up --build -d
+
+# Follow logs
+docker compose logs -f
+
+# Stop services
+docker compose down`}
+                                        />
+                                        <p className='text-sm text-gray-600 mt-4'>
+                                            The API will be available at{" "}
+                                            <code className='px-1 py-0.5 bg-gray-100 rounded'>
+                                                http://localhost:8080
+                                            </code>{" "}
+                                            and the web dashboard at{" "}
+                                            <code className='px-1 py-0.5 bg-gray-100 rounded'>
+                                                http://localhost:3000
+                                            </code>
+                                            .
+                                        </p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className='flex items-center'>
+                                            <Terminal className='w-5 h-5 mr-2 text-orange-600' />
+                                            Alternative: Build From Source
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Run the Go API and Next.js web app
+                                            directly
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className='space-y-4'>
+                                            <div>
+                                                <h4 className='font-semibold mb-2'>
+                                                    Run the API
+                                                </h4>
+                                                <CodeBlock
+                                                    id='self-host-api'
+                                                    code={`# Install Go dependencies
+go mod download
+
+# Apply database migrations
+go run ./cmd/migrate up
+
+# Start the API server
+go run ./main`}
+                                                />
+                                            </div>
+                                            <div>
+                                                <h4 className='font-semibold mb-2'>
+                                                    Run the Web Dashboard
+                                                </h4>
+                                                <CodeBlock
+                                                    id='self-host-web'
+                                                    language='bash'
+                                                    code={`cd web
+npm install
+npm run build
+npm run start`}
+                                                />
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className='flex items-center'>
+                                            <Shield className='w-5 h-5 mr-2 text-red-600' />
+                                            Hardening for Production
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className='grid md:grid-cols-2 gap-4'>
+                                            {[
+                                                "Terminate TLS at a reverse proxy (nginx, Caddy, Traefik)",
+                                                "Rotate JWT_SECRET and ENCRYPTION_KEY from strong random values",
+                                                "Use managed Postgres and Redis, or enable persistent volumes",
+                                                "Restrict CORS origins to your own domains",
+                                                "Enable rate limiting at the proxy layer",
+                                                "Back up the Postgres volume regularly",
+                                                "Pin Docker image tags instead of latest",
+                                                "Monitor logs and set up alerting"
+                                            ].map((item, index) => (
+                                                <div
+                                                    key={index}
+                                                    className='flex items-center space-x-2'>
+                                                    <CheckCircle className='w-4 h-4 text-green-600' />
+                                                    <span className='text-sm'>
+                                                        {item}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className='bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200'>
+                                    <CardContent className='pt-6'>
+                                        <div className='flex items-start space-x-3'>
+                                            <Download className='w-6 h-6 text-blue-600 mt-0.5' />
+                                            <div className='flex-1'>
+                                                <h4 className='font-semibold text-gray-900 mb-1'>
+                                                    Contribute & Support
+                                                </h4>
+                                                <p className='text-gray-700 text-sm mb-3'>
+                                                    Chitthi is community-driven.
+                                                    Star the repo, open issues,
+                                                    or send pull requests on
+                                                    GitHub.
+                                                </p>
+                                                <Button
+                                                    asChild
+                                                    size='sm'
+                                                    className='bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'>
+                                                    <a
+                                                        href='https://github.com/imsks/chitthi'
+                                                        target='_blank'
+                                                        rel='noopener noreferrer'>
+                                                        <GitBranch className='w-4 h-4 mr-2' />
+                                                        View on GitHub
+                                                        <ExternalLink className='w-3 h-3 ml-2' />
+                                                    </a>
+                                                </Button>
                                             </div>
                                         </div>
                                     </CardContent>
