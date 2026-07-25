@@ -299,7 +299,7 @@ export default function QuickStartPage() {
                                     </h3>
                                     <CodeBlock
                                         id='cloud-send-email'
-                                        code={`curl -X POST https://your-chitthi-api-url/send-email \\
+                                        code={`curl -X POST https://chitthi-572964795629.asia-south1.run.app/send-email \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_CHITTHI_API_KEY" \\
   -d '{

@@ -37,7 +37,7 @@ export default function ApiReferenceContent() {
                                     Cloud
                                 </Badge>
                                 <code className='bg-gray-100 px-3 py-1 rounded text-sm'>
-                                    https://your-chitthi-api-url
+                                    https://chitthi-572964795629.asia-south1.run.app
                                 </code>
                             </div>
                             <div className='flex items-center space-x-3'>
